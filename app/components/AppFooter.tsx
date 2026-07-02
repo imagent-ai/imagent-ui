@@ -22,7 +22,7 @@ export function AppFooter() {
       <div className="footer-inner">
         <div className="footer-brand-panel">
           <Link className="footer-brand" href="/generation">
-            <span>ia</span>
+            <img src="/brand/imagent-ai-avatar.jpg" alt="" />
             <strong>imagent</strong>
           </Link>
           <p>Image generation arena and miner leaderboard made by Gittensor subnet 74.</p>

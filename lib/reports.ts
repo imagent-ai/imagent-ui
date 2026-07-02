@@ -213,7 +213,7 @@ function avatarFor(login: string) {
     .join("")
     .slice(0, 2)
     .toUpperCase() || "IA";
-  const colors = ["#052e1a", "#047857", "#059669", "#0f766e", "#14b8a6"];
+  const colors = ["#04183b", "#0358bc", "#0478e8", "#0aa6d8", "#1dd9f5"];
   const fill = colors[stableNumber(login) % colors.length];
   const svg = [
     '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">',

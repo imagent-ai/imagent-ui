@@ -282,7 +282,7 @@ export function GenerationChat() {
         <div className="conversation">
           {!activeSession || activeSession.messages.length === 0 ? (
             <section className="generation-empty">
-              <div className="empty-mark">ia</div>
+              <img className="empty-mark" src="/brand/imagent-ai-avatar.jpg" alt="" />
               <span className="empty-kicker">Gittensor subnet 74 · image agent · benchmark ready</span>
               <h1>What should imagent create?</h1>
               <div className="generation-showcase" aria-hidden="true">
@@ -313,7 +313,9 @@ export function GenerationChat() {
             <div className="conversation-stack">
               {activeSession.messages.map((message) => (
                 <article className={`chat-turn ${message.role}`} key={message.id}>
-                  <div className="turn-avatar">{message.role === "user" ? "You" : "ia"}</div>
+                  <div className="turn-avatar">
+                    {message.role === "user" ? "You" : <img src="/brand/imagent-ai-avatar.jpg" alt="" />}
+                  </div>
                   <div className="turn-content">
                     <p>{message.content}</p>
                     {message.imageUrl ? (
@@ -340,7 +342,9 @@ export function GenerationChat() {
               ))}
               {isGenerating ? (
                 <article className="chat-turn agent">
-                  <div className="turn-avatar">ia</div>
+                  <div className="turn-avatar">
+                    <img src="/brand/imagent-ai-avatar.jpg" alt="" />
+                  </div>
                   <div className="turn-content pending">
                     <Loader2 className="spin" size={16} />
                     Generating image

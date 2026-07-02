@@ -13,7 +13,11 @@ const jetBrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "imagent arena",
-  description: "Image agent playground and benchmark leaderboard"
+  description: "Image agent playground and benchmark leaderboard",
+  icons: {
+    icon: "/brand/imagent-ai-avatar.jpg",
+    apple: "/brand/imagent-ai-avatar.jpg"
+  }
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

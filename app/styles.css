@@ -1,25 +1,25 @@
 :root {
   color-scheme: light;
-  --bg: #edf5f0;
+  --bg: #eef7fb;
   --panel: #ffffff;
-  --panel-soft: #f5fbf7;
-  --sidebar: #ecf6f0;
-  --line: #d9e6de;
-  --line-strong: #b8d0c1;
-  --ink: #07140f;
-  --muted: #617269;
-  --accent: #22c55e;
-  --accent-dark: #047857;
-  --teal: #14b8a6;
-  --deep: #052e1a;
-  --deep-2: #064e3b;
-  --deep-3: #022c22;
+  --panel-soft: #f4fbfe;
+  --sidebar: #edf6fb;
+  --line: #d8e7ef;
+  --line-strong: #b4d3e1;
+  --ink: #071629;
+  --muted: #637687;
+  --accent: #1dd9f5;
+  --accent-dark: #0358bc;
+  --teal: #19c7ef;
+  --deep: #04183b;
+  --deep-2: #063273;
+  --deep-3: #020b20;
   --danger: #c93a32;
-  --success: #047857;
+  --success: #0358bc;
   --warning: #a16207;
   --gold: #c58b12;
-  --shadow: 0 20px 48px rgba(5, 46, 26, 0.12);
-  --focus: 0 0 0 3px rgba(34, 197, 94, 0.22);
+  --shadow: 0 20px 48px rgba(4, 24, 59, 0.13);
+  --focus: 0 0 0 3px rgba(29, 217, 245, 0.24);
   --radius-card: 8px;
 }
 
@@ -34,8 +34,8 @@ body {
 
 body {
   background:
-    linear-gradient(rgba(4, 120, 87, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(4, 120, 87, 0.045) 1px, transparent 1px),
+    linear-gradient(rgba(3, 88, 188, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(3, 88, 188, 0.045) 1px, transparent 1px),
     var(--bg);
   background-size: 80px 80px;
   color: var(--ink);
@@ -98,18 +98,22 @@ textarea:focus-visible {
   font-weight: 800;
 }
 
-.app-brand span,
+.app-brand img,
 .empty-mark {
-  align-items: center;
   background: var(--deep);
   border-radius: var(--radius-card);
-  color: #fff;
-  display: flex;
-  font-size: 13px;
-  font-weight: 800;
+  display: block;
+  flex: 0 0 auto;
   height: 30px;
-  justify-content: center;
+  object-fit: cover;
   width: 30px;
+}
+
+.app-brand img,
+.footer-brand img,
+.empty-mark {
+  border: 1px solid rgba(29, 217, 245, 0.24);
+  box-shadow: 0 8px 20px rgba(4, 24, 59, 0.16);
 }
 
 .app-nav {
@@ -138,14 +142,14 @@ textarea:focus-visible {
 }
 
 .header-subnet {
-  border: 1px solid rgba(4, 120, 87, 0.14);
+  border: 1px solid rgba(3, 88, 188, 0.14);
   justify-self: end;
   max-width: 100%;
 }
 
 .app-nav a:hover,
 .app-nav a.active {
-  background: #e8f8ee;
+  background: #e7f8ff;
   color: var(--ink);
 }
 
@@ -156,9 +160,9 @@ textarea:focus-visible {
 
 .footer-inner {
   background:
-    linear-gradient(rgba(4,120,87,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(4,120,87,0.04) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,255,249,0.94));
+    linear-gradient(rgba(3,88,188,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(3,88,188,0.04) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,251,255,0.94));
   background-size: 54px 54px, 54px 54px, auto;
   border: 1px solid var(--line);
   border-top: 3px solid var(--accent);
@@ -200,14 +204,14 @@ textarea:focus-visible {
   font-weight: 800;
 }
 
-.footer-brand span {
+.footer-brand img {
   align-items: center;
   background: var(--deep);
-  color: #fff;
   border-radius: var(--radius-card);
   display: flex;
   height: 32px;
   justify-content: center;
+  object-fit: cover;
   width: 32px;
 }
 
@@ -241,8 +245,8 @@ textarea:focus-visible {
 }
 
 .footer-links a:hover {
-  background: #e8f8ee;
-  border-color: rgba(4, 120, 87, 0.24);
+  background: #e7f8ff;
+  border-color: rgba(3, 88, 188, 0.24);
   color: var(--ink);
 }
 
@@ -266,9 +270,9 @@ textarea:focus-visible {
   background:
     linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px),
-    radial-gradient(circle at top left, rgba(34, 197, 94, 0.34), transparent 34%),
-    radial-gradient(circle at 90% 18%, rgba(20, 184, 166, 0.16), transparent 26%),
-    linear-gradient(180deg, var(--deep), #03160e);
+    radial-gradient(circle at top left, rgba(29, 217, 245, 0.34), transparent 34%),
+    radial-gradient(circle at 90% 18%, rgba(29, 217, 245, 0.16), transparent 26%),
+    linear-gradient(180deg, var(--deep), #031330);
   background-size: 44px 44px, 44px 44px, auto, auto, auto;
   border-right: 1px solid rgba(255,255,255,0.08);
   display: flex;
@@ -320,7 +324,7 @@ textarea:focus-visible {
 }
 
 .history-item.active {
-  background: rgba(34, 197, 94, 0.15);
+  background: rgba(29, 217, 245, 0.15);
 }
 
 .history-select {
@@ -404,9 +408,9 @@ textarea:focus-visible {
 
 .generation-main {
   background:
-    radial-gradient(circle at 84% 8%, rgba(20, 184, 166, 0.15), transparent 24%),
-    radial-gradient(circle at 16% 14%, rgba(34, 197, 94, 0.1), transparent 20%),
-    linear-gradient(180deg, #f8fffb 0%, #fff 54%);
+    radial-gradient(circle at 84% 8%, rgba(29, 217, 245, 0.15), transparent 24%),
+    radial-gradient(circle at 16% 14%, rgba(29, 217, 245, 0.1), transparent 20%),
+    linear-gradient(180deg, #f8fcff 0%, #fff 54%);
   display: grid;
   grid-template-rows: 58px minmax(0, 1fr) auto;
   min-width: 0;
@@ -424,9 +428,9 @@ textarea:focus-visible {
 
 .generation-main::before {
   background:
-    radial-gradient(circle, rgba(4,120,87,0.18) 0 3px, transparent 4px),
-    linear-gradient(90deg, transparent 0 24px, rgba(4,120,87,0.08) 24px 26px, transparent 26px 78px),
-    linear-gradient(0deg, transparent 0 24px, rgba(4,120,87,0.08) 24px 26px, transparent 26px 78px);
+    radial-gradient(circle, rgba(3,88,188,0.18) 0 3px, transparent 4px),
+    linear-gradient(90deg, transparent 0 24px, rgba(3,88,188,0.08) 24px 26px, transparent 26px 78px),
+    linear-gradient(0deg, transparent 0 24px, rgba(3,88,188,0.08) 24px 26px, transparent 26px 78px);
   background-position: 0 0, 13px 13px, 13px 13px;
   background-size: 78px 78px;
   inset: 58px 0 0;
@@ -436,11 +440,11 @@ textarea:focus-visible {
 
 .generation-main::after {
   background:
-    radial-gradient(circle at 18px 18px, rgba(34,197,94,0.42) 0 4px, transparent 5px),
-    radial-gradient(circle at 118px 82px, rgba(20,184,166,0.32) 0 4px, transparent 5px),
-    radial-gradient(circle at 210px 22px, rgba(34,197,94,0.3) 0 4px, transparent 5px),
-    linear-gradient(32deg, transparent 0 86px, rgba(4,120,87,0.14) 87px 89px, transparent 90px 240px),
-    linear-gradient(146deg, transparent 0 80px, rgba(4,120,87,0.13) 81px 83px, transparent 84px 240px);
+    radial-gradient(circle at 18px 18px, rgba(29,217,245,0.42) 0 4px, transparent 5px),
+    radial-gradient(circle at 118px 82px, rgba(29,217,245,0.32) 0 4px, transparent 5px),
+    radial-gradient(circle at 210px 22px, rgba(29,217,245,0.3) 0 4px, transparent 5px),
+    linear-gradient(32deg, transparent 0 86px, rgba(3,88,188,0.14) 87px 89px, transparent 90px 240px),
+    linear-gradient(146deg, transparent 0 80px, rgba(3,88,188,0.13) 81px 83px, transparent 84px 240px);
   height: 190px;
   opacity: 0.78;
   right: 8%;
@@ -492,8 +496,8 @@ textarea:focus-visible {
 
 .quality-chip {
   align-items: center;
-  background: #e8f8ee;
-  border: 1px solid rgba(4, 120, 87, 0.22);
+  background: #e7f8ff;
+  border: 1px solid rgba(3, 88, 188, 0.22);
   border-radius: 999px;
   color: var(--accent-dark);
   display: inline-flex;
@@ -506,7 +510,7 @@ textarea:focus-visible {
 
 .model-chip:hover,
 .icon-button:hover {
-  background: #e8f8ee;
+  background: #e7f8ff;
 }
 
 .conversation {
@@ -524,6 +528,7 @@ textarea:focus-visible {
   justify-content: center;
   margin: 0 auto;
   max-width: 1060px;
+  min-width: 0;
   min-height: calc(100vh - 250px);
   padding: 0 12px;
   text-align: center;
@@ -531,7 +536,7 @@ textarea:focus-visible {
 }
 
 .generation-empty .empty-mark {
-  border: 1px solid rgba(34, 197, 94, 0.26);
+  border: 1px solid rgba(29, 217, 245, 0.26);
   border-radius: 14px;
   box-shadow: 0 16px 34px rgba(13, 16, 32, 0.18);
   height: 48px;
@@ -540,8 +545,8 @@ textarea:focus-visible {
 }
 
 .empty-kicker {
-  background: rgba(232, 248, 238, 0.72);
-  border: 1px solid rgba(4, 120, 87, 0.22);
+  background: rgba(231, 248, 255, 0.72);
+  border: 1px solid rgba(3, 88, 188, 0.22);
   border-radius: 999px;
   color: var(--accent-dark);
   display: inline-flex;
@@ -549,7 +554,10 @@ textarea:focus-visible {
   font-weight: 900;
   letter-spacing: 0.12em;
   margin-bottom: 14px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   padding: 7px 12px;
+  text-align: center;
   text-transform: uppercase;
 }
 
@@ -589,6 +597,7 @@ textarea:focus-visible {
   color: var(--ink);
   box-shadow: 0 14px 34px rgba(18, 22, 36, 0.08);
   font-weight: 700;
+  min-width: 0;
   min-height: 68px;
   overflow-wrap: anywhere;
   padding: 16px;
@@ -596,8 +605,8 @@ textarea:focus-visible {
 }
 
 .prompt-suggestions button:hover {
-  background: #f7fff9;
-  border-color: rgba(34, 197, 94, 0.28);
+  background: #f7fbff;
+  border-color: rgba(29, 217, 245, 0.28);
   transform: translateY(-1px);
 }
 
@@ -610,13 +619,14 @@ textarea:focus-visible {
   background-size: 34px 34px, 34px 34px, auto;
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 16px;
-  box-shadow: 0 26px 70px rgba(5, 46, 26, 0.28);
+  box-shadow: 0 26px 70px rgba(4, 24, 59, 0.28);
   color: #fff;
   display: grid;
   gap: 14px;
   grid-template-columns: minmax(0, 1fr);
   margin-top: 18px;
   max-width: 500px;
+  min-width: 0;
   overflow: hidden;
   padding: 12px;
   position: relative;
@@ -625,8 +635,8 @@ textarea:focus-visible {
 
 .generation-showcase::before {
   background:
-    radial-gradient(circle at 12% 18%, rgba(134,239,172,0.32), transparent 20%),
-    radial-gradient(circle at 88% 28%, rgba(20,184,166,0.34), transparent 24%);
+    radial-gradient(circle at 12% 18%, rgba(29,217,245,0.32), transparent 20%),
+    radial-gradient(circle at 88% 28%, rgba(29,217,245,0.34), transparent 24%);
   content: "";
   inset: 0;
   position: absolute;
@@ -635,10 +645,10 @@ textarea:focus-visible {
 .showcase-image {
   aspect-ratio: 16 / 8.4;
   background:
-    radial-gradient(circle at 74% 20%, rgba(134,239,172,0.75), transparent 16%),
-    radial-gradient(circle at 28% 22%, rgba(20,184,166,0.44), transparent 18%),
+    radial-gradient(circle at 74% 20%, rgba(29,217,245,0.75), transparent 16%),
+    radial-gradient(circle at 28% 22%, rgba(29,217,245,0.44), transparent 18%),
     linear-gradient(180deg, rgba(255,255,255,0.12), transparent 42%),
-    linear-gradient(135deg, rgba(4,120,87,0.65), rgba(2,44,34,0.88));
+    linear-gradient(135deg, rgba(3,88,188,0.65), rgba(4,24,59,0.88));
   border: 1px solid rgba(255,255,255,0.18);
   border-radius: 12px;
   overflow: hidden;
@@ -658,7 +668,7 @@ textarea:focus-visible {
 }
 
 .showcase-image::after {
-  background: linear-gradient(180deg, transparent, rgba(2,44,34,0.42));
+  background: linear-gradient(180deg, transparent, rgba(4,24,59,0.42));
   bottom: 0;
   content: "";
   height: 44%;
@@ -677,9 +687,9 @@ textarea:focus-visible {
 }
 
 .showcase-sun {
-  background: radial-gradient(circle, #d9f99d 0 18%, #86efac 19% 44%, rgba(34,197,94,0.24) 45% 100%);
+  background: radial-gradient(circle, #e8fbff 0 18%, #75eaff 19% 44%, rgba(29,217,245,0.24) 45% 100%);
   border-radius: 50%;
-  box-shadow: 0 0 70px rgba(134,239,172,0.55);
+  box-shadow: 0 0 70px rgba(29,217,245,0.55);
   height: 112px;
   right: 40px;
   top: 28px;
@@ -700,7 +710,7 @@ textarea:focus-visible {
 }
 
 .ring-two {
-  border-color: rgba(134,239,172,0.42);
+  border-color: rgba(29,217,245,0.42);
   height: 132px;
   left: 130px;
   top: 74px;
@@ -708,11 +718,11 @@ textarea:focus-visible {
 }
 
 .showcase-plate {
-  background: linear-gradient(180deg, rgba(236,253,245,0.88), rgba(20,184,166,0.48));
+  background: linear-gradient(180deg, rgba(232,251,255,0.88), rgba(29,217,245,0.48));
   border: 1px solid rgba(255,255,255,0.4);
   border-radius: 999px 999px 10px 10px;
   bottom: 26px;
-  box-shadow: 0 18px 38px rgba(2,44,34,0.22);
+  box-shadow: 0 18px 38px rgba(4,24,59,0.22);
 }
 
 .plate-one {
@@ -734,7 +744,7 @@ textarea:focus-visible {
 }
 
 .showcase-scanline {
-  background: linear-gradient(90deg, transparent, rgba(134,239,172,0.95), transparent);
+  background: linear-gradient(90deg, transparent, rgba(29,217,245,0.95), transparent);
   bottom: 88px;
   height: 2px;
   left: 24px;
@@ -804,8 +814,18 @@ textarea:focus-visible {
 
 .chat-turn.agent .turn-avatar {
   background: var(--deep);
-  border-color: var(--deep);
+  border-color: rgba(29, 217, 245, 0.26);
   color: #fff;
+  overflow: hidden;
+  padding: 0;
+}
+
+.turn-avatar img {
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }
 
 .turn-content {
@@ -827,9 +847,9 @@ textarea:focus-visible {
 }
 
 .generated-card {
-  border: 1px solid rgba(4, 120, 87, 0.18);
+  border: 1px solid rgba(3, 88, 188, 0.18);
   border-radius: var(--radius-card);
-  box-shadow: 0 18px 44px rgba(5, 46, 26, 0.1);
+  box-shadow: 0 18px 44px rgba(4, 24, 59, 0.1);
   margin-top: 14px;
   max-width: 540px;
   overflow: hidden;
@@ -891,7 +911,7 @@ textarea:focus-visible {
   align-items: flex-end;
   background: var(--panel);
   border-radius: 18px;
-  box-shadow: 0 0 0 1px rgba(4,120,87,0.16), 0 18px 46px rgba(5,46,26,0.12);
+  box-shadow: 0 0 0 1px rgba(3,88,188,0.16), 0 18px 46px rgba(4,24,59,0.12);
   display: grid;
   gap: 10px;
   grid-template-columns: minmax(0, 1fr) 38px;
@@ -902,7 +922,7 @@ textarea:focus-visible {
 }
 
 .generation-composer:focus-within {
-  box-shadow: 0 0 0 1px rgba(4,120,87,0.22), 0 20px 54px rgba(5,46,26,0.18), 0 0 0 6px rgba(34,197,94,0.08);
+  box-shadow: 0 0 0 1px rgba(3,88,188,0.22), 0 20px 54px rgba(4,24,59,0.18), 0 0 0 6px rgba(29,217,245,0.08);
   transform: translateY(-1px);
 }
 
@@ -938,7 +958,7 @@ textarea:focus-visible {
 
 .modal-backdrop {
   align-items: center;
-  background: rgba(2, 44, 34, 0.54);
+  background: rgba(4, 24, 59, 0.54);
   display: flex;
   inset: 0;
   justify-content: center;
@@ -949,7 +969,7 @@ textarea:focus-visible {
 
 .settings-modal {
   background: var(--panel);
-  border: 1px solid rgba(4, 120, 87, 0.16);
+  border: 1px solid rgba(3, 88, 188, 0.16);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow);
   display: grid;
@@ -989,7 +1009,7 @@ textarea:focus-visible {
 }
 
 .settings-modal header button:hover {
-  background: #e8f8ee;
+  background: #e7f8ff;
 }
 
 .settings-modal label {
@@ -1077,8 +1097,8 @@ textarea:focus-visible {
 }
 
 .segmented-control button.active {
-  background: #e8f8ee;
-  box-shadow: inset 0 0 0 1px rgba(4, 120, 87, 0.18);
+  background: #e7f8ff;
+  box-shadow: inset 0 0 0 1px rgba(3, 88, 188, 0.18);
   color: var(--accent-dark);
 }
 
@@ -1093,8 +1113,8 @@ textarea:focus-visible {
   background:
     linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px),
-    radial-gradient(circle at 78% 18%, rgba(34,197,94,0.24), transparent 28%),
-    linear-gradient(132deg, #032417 0%, #052e1a 45%, #064e3b 100%);
+    radial-gradient(circle at 78% 18%, rgba(29,217,245,0.24), transparent 28%),
+    linear-gradient(132deg, #031330 0%, #04183b 45%, #063273 100%);
   background-size: 86px 86px, 86px 86px, auto, auto;
   border-radius: var(--radius-card);
   color: #fff;
@@ -1109,7 +1129,7 @@ textarea:focus-visible {
 }
 
 .leaderboard-hero::after {
-  background: linear-gradient(90deg, transparent, rgba(134,239,172,0.78), transparent);
+  background: linear-gradient(90deg, transparent, rgba(29,217,245,0.78), transparent);
   bottom: 0;
   content: "";
   height: 2px;
@@ -1125,8 +1145,8 @@ textarea:focus-visible {
 }
 
 .page-kicker {
-  background: rgba(5, 46, 26, 0.52);
-  border: 1px solid rgba(134,239,172,0.52);
+  background: rgba(4, 24, 59, 0.52);
+  border: 1px solid rgba(29,217,245,0.52);
   border-radius: 999px;
   color: var(--accent);
   display: inline-flex;
@@ -1222,7 +1242,7 @@ textarea:focus-visible {
 }
 
 .signal-rails span {
-  background: linear-gradient(90deg, #86efac, var(--teal));
+  background: linear-gradient(90deg, #75eaff, var(--teal));
   border-radius: 999px;
   display: block;
   height: 12px;
@@ -1363,7 +1383,7 @@ textarea:focus-visible {
 
 .table-toolbar {
   align-items: center;
-  background: linear-gradient(180deg, #fff, #f7fff9);
+  background: linear-gradient(180deg, #fff, #f7fbff);
   border-bottom: 1px solid var(--line);
   display: flex;
   gap: 18px;
@@ -1402,8 +1422,8 @@ textarea:focus-visible {
 
 .leaderboard-search {
   align-items: center;
-  background: #f7fff9;
-  border: 1px solid rgba(4, 120, 87, 0.18);
+  background: #f7fbff;
+  border: 1px solid rgba(3, 88, 188, 0.18);
   border-radius: 999px;
   display: inline-flex;
   gap: 8px;
@@ -1440,7 +1460,7 @@ textarea:focus-visible {
 }
 
 .rank-pill {
-  background: #e8f8ee;
+  background: #e7f8ff;
   color: var(--accent-dark);
   font-weight: 900;
 }
@@ -1476,7 +1496,7 @@ textarea:focus-visible {
 }
 
 .leaderboard-table tbody tr:hover {
-  background: #f7fff9;
+  background: #f7fbff;
 }
 
 .leaderboard-table th {
@@ -1584,7 +1604,7 @@ textarea:focus-visible {
 }
 
 .result-badge.pass {
-  background: #f1ffe0;
+  background: #e7f8ff;
   color: var(--accent-dark);
 }
 
@@ -1594,8 +1614,8 @@ textarea:focus-visible {
 }
 
 .report-link:hover {
-  background: #e8f8ee;
-  border-color: rgba(4, 120, 87, 0.26);
+  background: #e7f8ff;
+  border-color: rgba(3, 88, 188, 0.26);
 }
 
 .empty-table-cell {
@@ -1678,8 +1698,8 @@ textarea:focus-visible {
 }
 
 .report-score span {
-  background: rgba(232, 248, 238, 0.14);
-  border: 1px solid rgba(134, 239, 172, 0.34);
+  background: rgba(231, 248, 255, 0.14);
+  border: 1px solid rgba(29, 217, 245, 0.34);
   border-radius: 999px;
   display: inline-flex;
   font-size: 12px;
@@ -1715,8 +1735,8 @@ textarea:focus-visible {
 }
 
 .external-link:hover {
-  background: #e8f8ee;
-  border-color: rgba(4, 120, 87, 0.26);
+  background: #e7f8ff;
+  border-color: rgba(3, 88, 188, 0.26);
 }
 
 .metric-tile span {
@@ -1733,7 +1753,7 @@ textarea:focus-visible {
 
 .case-row {
   align-items: center;
-  background: linear-gradient(180deg, #fff, #fbfffc);
+  background: linear-gradient(180deg, #fff, #fbfdff);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   display: grid;
@@ -1855,10 +1875,11 @@ textarea:focus-visible {
 
   .app-nav a {
     flex: initial;
-    font-size: 14px;
+    font-size: 13px;
     justify-content: center;
     overflow: hidden;
     padding: 0 8px;
+    white-space: nowrap;
   }
 
   .app-footer {
@@ -1906,7 +1927,16 @@ textarea:focus-visible {
   }
 
   .generation-empty h1 {
-    font-size: 34px;
+    font-size: 31px;
+    line-height: 1.05;
+  }
+
+  .empty-kicker {
+    border-radius: var(--radius-card);
+    display: block;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+    padding: 7px 10px;
   }
 
   .prompt-suggestions,
