@@ -8,7 +8,7 @@ dlcourse.gleeze.com {
 	reverse_proxy 127.0.0.1:8080
 }
 
-imagent.ai, www.imagent.ai {
+imagentai.org, www.imagentai.org {
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:3002
 }
