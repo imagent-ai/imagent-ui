@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Check,
+  ChevronDown,
   Download,
   KeyRound,
   Loader2,
@@ -219,6 +220,7 @@ export function GenerationChat() {
   const modelChoices = verification.models.length ? verification.models : availableModels;
   const canUseVerifiedModels = draftApiKey.length > 0 && verification.status === "valid" && modelChoices.length > 0;
   const canSaveSettings = !draftApiKey || verification.status === "valid";
+  const selectedDraftModel = modelChoices.find((model) => model.id === draftSettings.model);
   const canSubmit = useMemo(() => prompt.trim().length > 0 && !isGenerating, [prompt, isGenerating]);
 
   function createSession() {
@@ -546,23 +548,28 @@ export function GenerationChat() {
             </label>
             <label className="settings-field">
               <span>Image model</span>
-              <select
-                value={canUseVerifiedModels ? draftSettings.model : ""}
-                onChange={(event) => setDraftSettings({...draftSettings, model: event.target.value})}
-                disabled={!canUseVerifiedModels}
-              >
-                {canUseVerifiedModels ? (
-                  modelChoices.map((option) => (
-                    <option value={option.id} key={option.id}>
-                      {option.name} · {option.pricing}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">Verify OpenRouter to load image models</option>
-                )}
-              </select>
+              <div className="select-shell">
+                <select
+                  value={canUseVerifiedModels ? draftSettings.model : ""}
+                  onChange={(event) => setDraftSettings({...draftSettings, model: event.target.value})}
+                  disabled={!canUseVerifiedModels}
+                >
+                  {canUseVerifiedModels ? (
+                    modelChoices.map((option) => (
+                      <option value={option.id} key={option.id}>
+                        {option.name}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">Verify OpenRouter to load image models</option>
+                  )}
+                </select>
+                <ChevronDown size={16} />
+              </div>
               {canUseVerifiedModels ? (
-                <small className="field-note">{modelChoices.length} image models loaded from OpenRouter.</small>
+                <small className="field-note">
+                  {selectedDraftModel?.pricing || "pricing unavailable"} · {modelChoices.length} image models loaded.
+                </small>
               ) : null}
             </label>
             <label className="settings-field">
@@ -601,32 +608,33 @@ export function GenerationChat() {
 function VerificationBadge({ verification }: { verification: VerificationState }) {
   if (verification.status === "verifying") {
     return (
-      <span className="verification-status verifying">
+      <span className="verification-status verifying" aria-label="Verifying OpenRouter key" title="Verifying OpenRouter key">
         <Loader2 className="spin" size={14} />
-        Verifying
       </span>
     );
   }
 
   if (verification.status === "valid") {
     return (
-      <span className="verification-status valid">
+      <span className="verification-status valid" aria-label={verification.message || "OpenRouter key verified"} title={verification.message || "OpenRouter key verified"}>
         <Check size={14} />
-        {verification.message || "Verified"}
       </span>
     );
   }
 
   if (verification.status === "invalid") {
     return (
-      <span className="verification-status invalid" title={verification.message}>
+      <span className="verification-status invalid" aria-label={verification.message || "Invalid OpenRouter key"} title={verification.message || "Invalid OpenRouter key"}>
         <AlertCircle size={14} />
-        Invalid key
       </span>
     );
   }
 
-  return <span className="verification-status idle">Not configured</span>;
+  return (
+    <span className="verification-status idle" aria-label="OpenRouter key not configured" title="OpenRouter key not configured">
+      <KeyRound size={14} />
+    </span>
+  );
 }
 
 function newSession(): ChatSession {

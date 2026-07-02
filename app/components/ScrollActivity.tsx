@@ -2,98 +2,282 @@
 
 import { useEffect } from "react";
 
-const ACTIVE_CLASS = "scrollbar-active";
-const EDGE_CLASS = "scrollbar-edge";
+type Axis = "vertical" | "horizontal";
+
+type Metrics = {
+  maxScroll: number;
+  thumbSize: number;
+  trackSize: number;
+};
+
+type ScrollbarRecord = {
+  element: HTMLElement | null;
+  horizontal: HTMLButtonElement;
+  horizontalMetrics: Metrics | null;
+  hideTimer: number;
+  vertical: HTMLButtonElement;
+  verticalMetrics: Metrics | null;
+};
+
 const EDGE_SIZE = 22;
 const HIDE_DELAY_MS = 900;
+const MIN_THUMB_SIZE = 42;
+const TRACK_INSET = 4;
+const TARGET_SELECTOR = ".custom-scrollbar, .leaderboard-table-wrap";
 
 export function ScrollActivity() {
   useEffect(() => {
-    const timers = new WeakMap<Element, number>();
-    let documentTimer = 0;
+    const records = new Map<HTMLElement | null, ScrollbarRecord>();
+    let frame = 0;
 
-    function showScrollbar(element: Element) {
-      element.classList.add(ACTIVE_CLASS);
-      const currentTimer = timers.get(element);
-      if (currentTimer) {
-        window.clearTimeout(currentTimer);
+    function createThumb(axis: Axis) {
+      const thumb = document.createElement("button");
+      thumb.type = "button";
+      thumb.className = `custom-scrollbar-thumb ${axis}`;
+      thumb.tabIndex = -1;
+      thumb.setAttribute("aria-hidden", "true");
+      document.body.appendChild(thumb);
+      return thumb;
+    }
+
+    function recordFor(element: HTMLElement | null) {
+      const existing = records.get(element);
+      if (existing) {
+        return existing;
       }
-      timers.set(
+      const record: ScrollbarRecord = {
         element,
-        window.setTimeout(() => {
-          element.classList.remove(ACTIVE_CLASS);
-        }, HIDE_DELAY_MS)
-      );
+        hideTimer: 0,
+        horizontal: createThumb("horizontal"),
+        horizontalMetrics: null,
+        vertical: createThumb("vertical"),
+        verticalMetrics: null
+      };
+      attachDrag(record, "vertical");
+      attachDrag(record, "horizontal");
+      records.set(element, record);
+      return record;
     }
 
-    function showDocumentScrollbar() {
-      document.documentElement.classList.add(ACTIVE_CLASS);
-      if (documentTimer) {
-        window.clearTimeout(documentTimer);
+    function refreshTargets() {
+      recordFor(null);
+      document.querySelectorAll<HTMLElement>(TARGET_SELECTOR).forEach((element) => recordFor(element));
+      records.forEach((record, element) => {
+        if (element && !document.body.contains(element)) {
+          record.vertical.remove();
+          record.horizontal.remove();
+          if (record.hideTimer) {
+            window.clearTimeout(record.hideTimer);
+          }
+          records.delete(element);
+        }
+      });
+      scheduleUpdate();
+    }
+
+    function scheduleUpdate() {
+      if (frame) {
+        return;
       }
-      documentTimer = window.setTimeout(() => {
-        document.documentElement.classList.remove(ACTIVE_CLASS);
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        records.forEach(updateRecord);
+      });
+    }
+
+    function show(record: ScrollbarRecord) {
+      record.vertical.classList.add("visible");
+      record.horizontal.classList.add("visible");
+      if (record.hideTimer) {
+        window.clearTimeout(record.hideTimer);
+      }
+      record.hideTimer = window.setTimeout(() => {
+        record.vertical.classList.remove("visible");
+        record.horizontal.classList.remove("visible");
       }, HIDE_DELAY_MS);
-    }
-
-    function scrollTarget(target: EventTarget | null) {
-      if (target === document || target === window) {
-        return document.documentElement;
-      }
-      return target instanceof Element ? target : null;
+      scheduleUpdate();
     }
 
     function onScroll(event: Event) {
-      const target = scrollTarget(event.target);
-      if (!target) {
+      const target = event.target;
+      if (target === document || target === window) {
+        show(recordFor(null));
         return;
       }
-      if (target === document.documentElement) {
-        showDocumentScrollbar();
-        return;
-      }
-      if (target.matches(".custom-scrollbar, .leaderboard-table-wrap")) {
-        showScrollbar(target);
+      if (target instanceof HTMLElement && target.matches(TARGET_SELECTOR)) {
+        show(recordFor(target));
       }
     }
 
     function onPointerMove(event: PointerEvent) {
-      const hovered = document
-        .elementFromPoint(event.clientX, event.clientY)
-        ?.closest(".custom-scrollbar, .leaderboard-table-wrap");
+      const element = document.elementFromPoint(event.clientX, event.clientY);
+      const hovered = element?.closest<HTMLElement>(TARGET_SELECTOR);
 
-      document.querySelectorAll(`.${EDGE_CLASS}`).forEach((element) => {
-        if (element !== hovered) {
-          element.classList.remove(EDGE_CLASS);
-        }
-      });
-      document.documentElement.classList.remove(EDGE_CLASS);
-
-      if (hovered instanceof HTMLElement && isScrollable(hovered)) {
+      if (hovered && isScrollable(hovered)) {
         const rect = hovered.getBoundingClientRect();
-        const nearVerticalEdge = hovered.scrollHeight > hovered.clientHeight && event.clientX > rect.right - EDGE_SIZE;
-        const nearHorizontalEdge = hovered.scrollWidth > hovered.clientWidth && event.clientY > rect.bottom - EDGE_SIZE;
+        const nearVerticalEdge = hovered.scrollHeight > hovered.clientHeight && event.clientX >= rect.right - EDGE_SIZE;
+        const nearHorizontalEdge = hovered.scrollWidth > hovered.clientWidth && event.clientY >= rect.bottom - EDGE_SIZE;
         if (nearVerticalEdge || nearHorizontalEdge) {
-          hovered.classList.add(EDGE_CLASS);
+          show(recordFor(hovered));
         }
-        return;
-      }
-
-      const nearDocumentEdge = event.clientX > window.innerWidth - EDGE_SIZE || event.clientY > window.innerHeight - EDGE_SIZE;
-      if (nearDocumentEdge && document.documentElement.scrollHeight > window.innerHeight) {
-        document.documentElement.classList.add(EDGE_CLASS);
+      } else if (document.documentElement.scrollHeight > window.innerHeight && event.clientX >= window.innerWidth - EDGE_SIZE) {
+        show(recordFor(null));
       }
     }
 
+    function updateRecord(record: ScrollbarRecord) {
+      updateVertical(record);
+      updateHorizontal(record);
+    }
+
+    function updateVertical(record: ScrollbarRecord) {
+      const element = record.element;
+      const thumb = record.vertical;
+      const maxScroll = element ? element.scrollHeight - element.clientHeight : document.documentElement.scrollHeight - window.innerHeight;
+      if (maxScroll <= 1) {
+        thumb.classList.remove("visible");
+        record.verticalMetrics = null;
+        return;
+      }
+
+      const rect = element?.getBoundingClientRect();
+      const header = document.querySelector<HTMLElement>(".app-header");
+      const top = rect ? Math.max(rect.top + TRACK_INSET, TRACK_INSET) : Math.max((header?.getBoundingClientRect().bottom || 0) + TRACK_INSET, TRACK_INSET);
+      const bottom = rect ? Math.min(rect.bottom - TRACK_INSET, window.innerHeight - TRACK_INSET) : window.innerHeight - TRACK_INSET;
+      const trackSize = Math.max(0, bottom - top);
+      if (trackSize < MIN_THUMB_SIZE) {
+        thumb.classList.remove("visible");
+        record.verticalMetrics = null;
+        return;
+      }
+
+      const viewportSize = element ? element.clientHeight : window.innerHeight;
+      const scrollSize = element ? element.scrollHeight : document.documentElement.scrollHeight;
+      const scrollTop = element ? element.scrollTop : window.scrollY;
+      const thumbSize = Math.max(MIN_THUMB_SIZE, Math.min(trackSize, (viewportSize / scrollSize) * trackSize));
+      const thumbTop = top + (scrollTop / maxScroll) * (trackSize - thumbSize);
+      const left = rect ? rect.right - 8 : window.innerWidth - 8;
+
+      thumb.style.height = `${thumbSize}px`;
+      thumb.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(thumbTop)}px, 0)`;
+      record.verticalMetrics = { maxScroll, thumbSize, trackSize };
+    }
+
+    function updateHorizontal(record: ScrollbarRecord) {
+      const element = record.element;
+      const thumb = record.horizontal;
+      if (!element) {
+        thumb.classList.remove("visible");
+        record.horizontalMetrics = null;
+        return;
+      }
+
+      const maxScroll = element.scrollWidth - element.clientWidth;
+      if (maxScroll <= 1) {
+        thumb.classList.remove("visible");
+        record.horizontalMetrics = null;
+        return;
+      }
+
+      const rect = element.getBoundingClientRect();
+      const left = Math.max(rect.left + TRACK_INSET, TRACK_INSET);
+      const right = Math.min(rect.right - TRACK_INSET, window.innerWidth - TRACK_INSET);
+      const trackSize = Math.max(0, right - left);
+      if (trackSize < MIN_THUMB_SIZE) {
+        thumb.classList.remove("visible");
+        record.horizontalMetrics = null;
+        return;
+      }
+
+      const thumbSize = Math.max(MIN_THUMB_SIZE, Math.min(trackSize, (element.clientWidth / element.scrollWidth) * trackSize));
+      const thumbLeft = left + (element.scrollLeft / maxScroll) * (trackSize - thumbSize);
+      const top = rect.bottom - 8;
+
+      thumb.style.width = `${thumbSize}px`;
+      thumb.style.transform = `translate3d(${Math.round(thumbLeft)}px, ${Math.round(top)}px, 0)`;
+      record.horizontalMetrics = { maxScroll, thumbSize, trackSize };
+    }
+
+    function attachDrag(record: ScrollbarRecord, axis: Axis) {
+      const thumb = axis === "vertical" ? record.vertical : record.horizontal;
+      thumb.addEventListener("pointerdown", (event) => {
+        const metrics = axis === "vertical" ? record.verticalMetrics : record.horizontalMetrics;
+        if (!metrics) {
+          return;
+        }
+        event.preventDefault();
+        thumb.setPointerCapture(event.pointerId);
+        thumb.classList.add("dragging", "visible");
+        const startPointer = axis === "vertical" ? event.clientY : event.clientX;
+        const startScroll = getScroll(record.element, axis);
+        const move = (moveEvent: PointerEvent) => {
+          const currentPointer = axis === "vertical" ? moveEvent.clientY : moveEvent.clientX;
+          const delta = currentPointer - startPointer;
+          const trackDelta = Math.max(1, metrics.trackSize - metrics.thumbSize);
+          setScroll(record.element, axis, startScroll + (delta / trackDelta) * metrics.maxScroll);
+          show(record);
+        };
+        const up = () => {
+          thumb.classList.remove("dragging");
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+          show(record);
+        };
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up, { once: true });
+      });
+    }
+
+    function getScroll(element: HTMLElement | null, axis: Axis) {
+      if (!element) {
+        return axis === "vertical" ? window.scrollY : window.scrollX;
+      }
+      return axis === "vertical" ? element.scrollTop : element.scrollLeft;
+    }
+
+    function setScroll(element: HTMLElement | null, axis: Axis, value: number) {
+      if (!element) {
+        if (axis === "vertical") {
+          window.scrollTo({ top: value, left: window.scrollX });
+        } else {
+          window.scrollTo({ top: window.scrollY, left: value });
+        }
+        return;
+      }
+      if (axis === "vertical") {
+        element.scrollTop = value;
+      } else {
+        element.scrollLeft = value;
+      }
+    }
+
+    function onResize() {
+      refreshTargets();
+    }
+
+    const observer = new MutationObserver(refreshTargets);
+    observer.observe(document.body, { childList: true, subtree: true });
+    refreshTargets();
+
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("resize", onResize);
 
     return () => {
+      observer.disconnect();
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("pointermove", onPointerMove);
-      if (documentTimer) {
-        window.clearTimeout(documentTimer);
+      window.removeEventListener("resize", onResize);
+      if (frame) {
+        window.cancelAnimationFrame(frame);
       }
+      records.forEach((record) => {
+        if (record.hideTimer) {
+          window.clearTimeout(record.hideTimer);
+        }
+        record.vertical.remove();
+        record.horizontal.remove();
+      });
     };
   }, []);
 
