@@ -20,7 +20,7 @@ type ScrollbarRecord = {
 };
 
 const EDGE_SIZE = 22;
-const HIDE_DELAY_MS = 900;
+const HIDE_DELAY_MS = 1500;
 const MIN_THUMB_SIZE = 42;
 const TRACK_INSET = 4;
 const TARGET_SELECTOR = ".custom-scrollbar, .leaderboard-table-wrap";
@@ -104,16 +104,25 @@ export function ScrollActivity() {
         show(recordFor(null));
         return;
       }
-      if (target instanceof HTMLElement && target.matches(TARGET_SELECTOR)) {
+      if (target instanceof HTMLElement) {
+        const scroller = target.matches(TARGET_SELECTOR) ? target : target.closest<HTMLElement>(TARGET_SELECTOR);
+        if (scroller) {
+          show(recordFor(scroller));
+        }
+      }
+    }
+
+    function onWheel(event: WheelEvent) {
+      const target = scrollTargetFromPoint(event.clientX, event.clientY);
+      if (target !== undefined) {
         show(recordFor(target));
       }
     }
 
     function onPointerMove(event: PointerEvent) {
-      const element = document.elementFromPoint(event.clientX, event.clientY);
-      const hovered = element?.closest<HTMLElement>(TARGET_SELECTOR);
+      const hovered = scrollTargetFromPoint(event.clientX, event.clientY);
 
-      if (hovered && isScrollable(hovered)) {
+      if (hovered instanceof HTMLElement) {
         const rect = hovered.getBoundingClientRect();
         const nearVerticalEdge = hovered.scrollHeight > hovered.clientHeight && event.clientX >= rect.right - EDGE_SIZE;
         const nearHorizontalEdge = hovered.scrollWidth > hovered.clientWidth && event.clientY >= rect.bottom - EDGE_SIZE;
@@ -123,6 +132,42 @@ export function ScrollActivity() {
       } else if (document.documentElement.scrollHeight > window.innerHeight && event.clientX >= window.innerWidth - EDGE_SIZE) {
         show(recordFor(null));
       }
+    }
+
+    function onTouchMove(event: TouchEvent) {
+      const touch = event.touches[0];
+      if (!touch) {
+        return;
+      }
+      const target = scrollTargetFromPoint(touch.clientX, touch.clientY);
+      if (target !== undefined) {
+        show(recordFor(target));
+      }
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      const scrollKeys = ["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", "Space"];
+      if (!scrollKeys.includes(event.code) && !scrollKeys.includes(event.key)) {
+        return;
+      }
+      const focused = document.activeElement?.closest<HTMLElement>(TARGET_SELECTOR);
+      if (focused && isScrollable(focused)) {
+        show(recordFor(focused));
+        return;
+      }
+      show(recordFor(null));
+    }
+
+    function scrollTargetFromPoint(x: number, y: number) {
+      const element = document.elementFromPoint(x, y);
+      const hovered = element?.closest<HTMLElement>(TARGET_SELECTOR);
+      if (hovered && isScrollable(hovered)) {
+        return hovered;
+      }
+      if (document.documentElement.scrollHeight > window.innerHeight) {
+        return null;
+      }
+      return undefined;
     }
 
     function updateRecord(record: ScrollbarRecord) {
@@ -153,10 +198,10 @@ export function ScrollActivity() {
 
       const viewportSize = element ? element.clientHeight : window.innerHeight;
       const scrollSize = element ? element.scrollHeight : document.documentElement.scrollHeight;
-      const scrollTop = element ? element.scrollTop : window.scrollY;
+      const scrollTop = clamp(element ? element.scrollTop : window.scrollY, 0, maxScroll);
       const thumbSize = Math.max(MIN_THUMB_SIZE, Math.min(trackSize, (viewportSize / scrollSize) * trackSize));
-      const thumbTop = top + (scrollTop / maxScroll) * (trackSize - thumbSize);
-      const left = rect ? rect.right - 8 : window.innerWidth - 8;
+      const thumbTop = clamp(top + (scrollTop / maxScroll) * (trackSize - thumbSize), top, bottom - thumbSize);
+      const left = rect ? rect.right - 12 : window.innerWidth - 12;
 
       thumb.style.height = `${thumbSize}px`;
       thumb.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(thumbTop)}px, 0)`;
@@ -190,8 +235,9 @@ export function ScrollActivity() {
       }
 
       const thumbSize = Math.max(MIN_THUMB_SIZE, Math.min(trackSize, (element.clientWidth / element.scrollWidth) * trackSize));
-      const thumbLeft = left + (element.scrollLeft / maxScroll) * (trackSize - thumbSize);
-      const top = rect.bottom - 8;
+      const scrollLeft = clamp(element.scrollLeft, 0, maxScroll);
+      const thumbLeft = clamp(left + (scrollLeft / maxScroll) * (trackSize - thumbSize), left, right - thumbSize);
+      const top = rect.bottom - 12;
 
       thumb.style.width = `${thumbSize}px`;
       thumb.style.transform = `translate3d(${Math.round(thumbLeft)}px, ${Math.round(top)}px, 0)`;
@@ -214,7 +260,7 @@ export function ScrollActivity() {
           const currentPointer = axis === "vertical" ? moveEvent.clientY : moveEvent.clientX;
           const delta = currentPointer - startPointer;
           const trackDelta = Math.max(1, metrics.trackSize - metrics.thumbSize);
-          setScroll(record.element, axis, startScroll + (delta / trackDelta) * metrics.maxScroll);
+          setScroll(record.element, axis, clamp(startScroll + (delta / trackDelta) * metrics.maxScroll, 0, metrics.maxScroll));
           show(record);
         };
         const up = () => {
@@ -260,13 +306,19 @@ export function ScrollActivity() {
     refreshTargets();
 
     window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("wheel", onWheel, { passive: true });
     window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("keydown", onKeyDown);
     window.addEventListener("resize", onResize);
 
     return () => {
       observer.disconnect();
       window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("wheel", onWheel);
       window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("resize", onResize);
       if (frame) {
         window.cancelAnimationFrame(frame);
@@ -286,4 +338,8 @@ export function ScrollActivity() {
 
 function isScrollable(element: HTMLElement) {
   return element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }
