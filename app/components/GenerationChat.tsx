@@ -13,6 +13,7 @@ import {
   Settings,
   Sparkles,
   Trash2,
+  UserRound,
   X
 } from "lucide-react";
 
@@ -449,7 +450,7 @@ export function GenerationChat() {
               {activeSession.messages.map((message) => (
                 <article className={`chat-turn ${message.role}`} key={message.id}>
                   <div className="turn-avatar">
-                    {message.role === "user" ? "You" : <img src="/brand/imagent-ai-avatar.jpg" alt="" />}
+                    {message.role === "user" ? <UserRound size={16} strokeWidth={2.4} /> : <img src="/brand/imagent-ai-avatar.jpg" alt="" />}
                   </div>
                   <div className="turn-content">
                     <p>{message.content}</p>
