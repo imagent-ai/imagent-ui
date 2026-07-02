@@ -18,7 +18,7 @@ export function AppHeader() {
     <header className="app-header">
       <Link className="app-brand" href="/generation">
         <img src="/brand/imagent-ai-avatar.jpg" alt="" />
-        <strong>imagent</strong>
+        <strong>IMAGENT BENCH</strong>
       </Link>
       <nav className="app-nav" aria-label="Primary navigation">
         {navItems.map((item) => {

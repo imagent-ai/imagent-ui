@@ -3,6 +3,7 @@ import { JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { AppFooter } from "@/app/components/AppFooter";
 import { AppHeader } from "@/app/components/AppHeader";
+import { ScrollActivity } from "@/app/components/ScrollActivity";
 import "./styles.css";
 
 const jetBrainsMono = JetBrains_Mono({
@@ -12,7 +13,7 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "imagent arena",
+  title: "Imagent Bench",
   description: "Image agent playground and benchmark leaderboard",
   icons: {
     icon: "/brand/imagent-ai-avatar.jpg",
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="en">
       <body className={jetBrainsMono.variable}>
+        <ScrollActivity />
         <AppHeader />
         <main>{children}</main>
         <AppFooter />

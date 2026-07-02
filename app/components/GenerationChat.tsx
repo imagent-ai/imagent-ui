@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
+  AlertCircle,
   Check,
   Download,
   KeyRound,
@@ -40,11 +41,37 @@ type PlaygroundSettings = {
   quality: string;
 };
 
+type OpenRouterModelOption = {
+  id: string;
+  name: string;
+  description: string;
+  pricing: string;
+};
+
+type VerificationStatus = "idle" | "verifying" | "valid" | "invalid";
+
+type VerificationState = {
+  status: VerificationStatus;
+  message: string;
+  models: OpenRouterModelOption[];
+};
+
 type GenerateResponse = {
   imageUrl?: string;
   model?: string;
   costUsd?: number;
   latencyMs?: number;
+  error?: string;
+};
+
+type VerifyResponse = {
+  verified?: boolean;
+  key?: {
+    label?: string;
+    limit_remaining?: number | null;
+  } | null;
+  models?: OpenRouterModelOption[];
+  warning?: string;
   error?: string;
 };
 
@@ -58,12 +85,28 @@ const defaultSettings: PlaygroundSettings = {
   quality: "low"
 };
 
-const modelOptions = [
-  { value: "openai/gpt-image-1-mini", label: "OpenAI GPT Image 1 Mini" },
-  { value: "black-forest-labs/flux.2-klein-4b", label: "Black Forest Labs FLUX 2 Klein" }
+const fallbackModelOptions: OpenRouterModelOption[] = [
+  {
+    id: "openai/gpt-image-1-mini",
+    name: "OpenAI GPT Image 1 Mini",
+    description: "Default OpenRouter image model",
+    pricing: "pricing loads after verification"
+  },
+  {
+    id: "black-forest-labs/flux.2-klein-4b",
+    name: "Black Forest Labs FLUX 2 Klein",
+    description: "Fallback image model",
+    pricing: "pricing loads after verification"
+  }
 ];
 
 const qualityOptions = ["low", "medium", "high", "auto"];
+
+const emptyVerification: VerificationState = {
+  status: "idle",
+  message: "",
+  models: []
+};
 
 const starterPrompts = [
   "Create a cinematic square poster for an open-source image agent leaderboard.",
@@ -77,6 +120,8 @@ export function GenerationChat() {
   const [activeSessionId, setActiveSessionId] = useState("");
   const [settings, setSettings] = useState<PlaygroundSettings>(defaultSettings);
   const [draftSettings, setDraftSettings] = useState<PlaygroundSettings>(defaultSettings);
+  const [availableModels, setAvailableModels] = useState<OpenRouterModelOption[]>(fallbackModelOptions);
+  const [verification, setVerification] = useState<VerificationState>(emptyVerification);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -111,7 +156,69 @@ export function GenerationChat() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }, [settings]);
 
+  useEffect(() => {
+    if (!settingsOpen) {
+      return;
+    }
+
+    const apiKey = draftSettings.apiKey.trim();
+    if (!apiKey) {
+      setVerification(emptyVerification);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setVerification({ status: "verifying", message: "Checking key", models: [] });
+      try {
+        const response = await fetch("/api/openrouter/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ apiKey }),
+          signal: controller.signal
+        });
+        const data = (await response.json()) as VerifyResponse;
+        if (!response.ok || data.error) {
+          throw new Error(data.error || `Verification failed with HTTP ${response.status}`);
+        }
+
+        const models = data.models?.length ? data.models : fallbackModelOptions;
+        setAvailableModels(models);
+        setVerification({
+          status: "valid",
+          message: data.warning || "Verified",
+          models
+        });
+        setDraftSettings((current) => {
+          if (current.apiKey.trim() !== apiKey || models.some((model) => model.id === current.model)) {
+            return current;
+          }
+          return { ...current, model: models[0].id };
+        });
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+        setVerification({
+          status: "invalid",
+          message: error instanceof Error ? error.message : "Verification failed",
+          models: []
+        });
+      }
+    }, 500);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [draftSettings.apiKey, settingsOpen]);
+
   const activeSession = sessions.find((session) => session.id === activeSessionId) || sessions[0];
+  const hasConfiguredOpenRouter = settings.apiKey.trim().length > 0;
+  const draftApiKey = draftSettings.apiKey.trim();
+  const modelChoices = verification.models.length ? verification.models : availableModels;
+  const canUseVerifiedModels = draftApiKey.length > 0 && verification.status === "valid" && modelChoices.length > 0;
+  const canSaveSettings = !draftApiKey || verification.status === "valid";
   const canSubmit = useMemo(() => prompt.trim().length > 0 && !isGenerating, [prompt, isGenerating]);
 
   function createSession() {
@@ -137,9 +244,12 @@ export function GenerationChat() {
   }
 
   function saveSettings() {
+    const selectedModel = availableModels.some((model) => model.id === draftSettings.model)
+      ? draftSettings.model
+      : availableModels[0]?.id || defaultSettings.model;
     setSettings({
       apiKey: draftSettings.apiKey.trim(),
-      model: draftSettings.model.trim() || defaultSettings.model,
+      model: selectedModel,
       quality: draftSettings.quality
     });
     setSettingsOpen(false);
@@ -158,6 +268,10 @@ export function GenerationChat() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit || !activeSession) {
+      return;
+    }
+    if (!settings.apiKey.trim()) {
+      openSettings();
       return;
     }
 
@@ -237,49 +351,58 @@ export function GenerationChat() {
           <MessageSquarePlus size={17} />
           New chat
         </button>
-        <div className="history-section-label">Chats</div>
-        <div className="history-list">
-          {sessions.map((session) => (
-            <div
-              className={session.id === activeSessionId ? "history-item active" : "history-item"}
-              key={session.id}
-            >
-              <button className="history-select" type="button" onClick={() => setActiveSessionId(session.id)}>
-                <span>{session.title}</span>
-                <small>{session.messages.length} messages</small>
-              </button>
-              <button
-                className="history-delete"
-                type="button"
-                aria-label={`Delete ${session.title}`}
-                onClick={() => deleteSession(session.id)}
+        <div className="history-scroll custom-scrollbar">
+          <div className="history-section-label">Chats</div>
+          <div className="history-list">
+            {sessions.map((session) => (
+              <div
+                className={session.id === activeSessionId ? "history-item active" : "history-item"}
+                key={session.id}
               >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
+                <button className="history-select" type="button" onClick={() => setActiveSessionId(session.id)}>
+                  <span>{session.title}</span>
+                  <small>{session.messages.length} messages</small>
+                </button>
+                <button
+                  className="history-delete"
+                  type="button"
+                  aria-label={`Delete ${session.title}`}
+                  onClick={() => deleteSession(session.id)}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
         <footer className="generation-sidebar-footer">
-          <strong>imagent arena</strong>
+          <strong>IMAGENT BENCH</strong>
           <span>made by Gittensor subnet 74</span>
         </footer>
       </aside>
 
       <section className="generation-main">
         <header className="generation-topbar">
-          <button className="model-chip" type="button" onClick={openSettings}>
-            <Sparkles size={16} />
-            <span>{labelForModel(settings.model)}</span>
-          </button>
+          {hasConfiguredOpenRouter ? (
+            <button className="model-chip" type="button" onClick={openSettings}>
+              <Sparkles size={16} />
+              <span>{labelForModel(settings.model, availableModels)}</span>
+            </button>
+          ) : (
+            <button className="openrouter-placeholder" type="button" onClick={openSettings}>
+              <KeyRound size={16} />
+              <span>Configure OpenRouter to choose an image model</span>
+            </button>
+          )}
           <div className="topbar-actions">
-            <span className="quality-chip">{settings.quality}</span>
+            {hasConfiguredOpenRouter ? <span className="quality-chip">{settings.quality}</span> : null}
             <button className="icon-button" type="button" onClick={openSettings} aria-label="Settings">
               <Settings size={18} />
             </button>
           </div>
         </header>
 
-        <div className="conversation">
+        <div className="conversation custom-scrollbar">
           {!activeSession || activeSession.messages.length === 0 ? (
             <section className="generation-empty">
               <img className="empty-mark" src="/brand/imagent-ai-avatar.jpg" alt="" />
@@ -296,9 +419,19 @@ export function GenerationChat() {
                   <span className="showcase-scanline" />
                 </div>
                 <div className="showcase-meta">
-                  <span>{labelForModel(settings.model)}</span>
-                  <strong>{settings.quality}</strong>
-                  <span>preview</span>
+                  {hasConfiguredOpenRouter ? (
+                    <>
+                      <span>{labelForModel(settings.model, availableModels)}</span>
+                      <strong>{settings.quality}</strong>
+                      <span>preview</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>OpenRouter</span>
+                      <strong>configure</strong>
+                      <span>required</span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="prompt-suggestions">
@@ -386,7 +519,7 @@ export function GenerationChat() {
             }
           }}
         >
-          <section className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+          <section className="settings-modal custom-scrollbar" role="dialog" aria-modal="true" aria-labelledby="settings-title">
             <header>
               <div>
                 <h2 id="settings-title">Generation settings</h2>
@@ -395,36 +528,44 @@ export function GenerationChat() {
                 <X size={18} />
               </button>
             </header>
-            <label>
+            <label className="settings-field">
               <span>OpenRouter API key</span>
-              <div className="input-with-icon">
-                <KeyRound size={16} />
-                <input
-                  type="password"
-                  value={draftSettings.apiKey}
-                  onChange={(event) => setDraftSettings({...draftSettings, apiKey: event.target.value})}
-                  placeholder="sk-or-..."
-                  autoComplete="off"
-                />
+              <div className="api-key-row">
+                <div className="input-with-icon">
+                  <KeyRound size={16} />
+                  <input
+                    type="password"
+                    value={draftSettings.apiKey}
+                    onChange={(event) => setDraftSettings({...draftSettings, apiKey: event.target.value})}
+                    placeholder="sk-or-..."
+                    autoComplete="off"
+                  />
+                </div>
+                <VerificationBadge verification={verification} />
               </div>
             </label>
-            <label>
-              <span>Model</span>
-              <input
-                list="model-options"
-                value={draftSettings.model}
+            <label className="settings-field">
+              <span>Image model</span>
+              <select
+                value={canUseVerifiedModels ? draftSettings.model : ""}
                 onChange={(event) => setDraftSettings({...draftSettings, model: event.target.value})}
-                placeholder="openai/gpt-image-1-mini"
-              />
-              <datalist id="model-options">
-                {modelOptions.map((option) => (
-                  <option value={option.value} key={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </datalist>
+                disabled={!canUseVerifiedModels}
+              >
+                {canUseVerifiedModels ? (
+                  modelChoices.map((option) => (
+                    <option value={option.id} key={option.id}>
+                      {option.name} · {option.pricing}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Verify OpenRouter to load image models</option>
+                )}
+              </select>
+              {canUseVerifiedModels ? (
+                <small className="field-note">{modelChoices.length} image models loaded from OpenRouter.</small>
+              ) : null}
             </label>
-            <label>
+            <label className="settings-field">
               <span>Quality level</span>
               <div className="segmented-control" role="radiogroup" aria-label="Quality level">
                 {qualityOptions.map((quality) => (
@@ -446,7 +587,7 @@ export function GenerationChat() {
               <button type="button" className="secondary-button" onClick={cancelSettings}>
                 Cancel
               </button>
-              <button type="button" className="primary-button" onClick={saveSettings}>
+              <button type="button" className="primary-button" onClick={saveSettings} disabled={!canSaveSettings}>
                 Save settings
               </button>
             </footer>
@@ -455,6 +596,37 @@ export function GenerationChat() {
       ) : null}
     </div>
   );
+}
+
+function VerificationBadge({ verification }: { verification: VerificationState }) {
+  if (verification.status === "verifying") {
+    return (
+      <span className="verification-status verifying">
+        <Loader2 className="spin" size={14} />
+        Verifying
+      </span>
+    );
+  }
+
+  if (verification.status === "valid") {
+    return (
+      <span className="verification-status valid">
+        <Check size={14} />
+        {verification.message || "Verified"}
+      </span>
+    );
+  }
+
+  if (verification.status === "invalid") {
+    return (
+      <span className="verification-status invalid" title={verification.message}>
+        <AlertCircle size={14} />
+        Invalid key
+      </span>
+    );
+  }
+
+  return <span className="verification-status idle">Not configured</span>;
 }
 
 function newSession(): ChatSession {
@@ -472,10 +644,10 @@ function titleFromPrompt(prompt: string) {
   return prompt.length > 42 ? `${prompt.slice(0, 42)}...` : prompt;
 }
 
-function labelForModel(model: string) {
-  const knownModel = modelOptions.find((option) => option.value === model);
+function labelForModel(model: string, models: OpenRouterModelOption[]) {
+  const knownModel = models.find((option) => option.id === model);
   if (knownModel) {
-    return knownModel.label.replace("OpenAI ", "").replace("Black Forest Labs ", "");
+    return knownModel.name.replace("OpenAI ", "").replace("Black Forest Labs ", "");
   }
   return model.length > 30 ? `${model.slice(0, 30)}...` : model;
 }

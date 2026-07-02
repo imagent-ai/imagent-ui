@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
       "HTTP-Referer": "https://github.com/imagent-ai/imagent",
-      "X-OpenRouter-Title": "imagent playground"
+      "X-OpenRouter-Title": "Imagent Bench"
     },
     body: JSON.stringify(requestBody)
   });
