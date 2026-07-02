@@ -58,6 +58,13 @@ type VerificationState = {
   models: OpenRouterModelOption[];
 };
 
+type VerificationCache = {
+  apiKey: string;
+  message: string;
+  models: OpenRouterModelOption[];
+  verifiedAt: string;
+};
+
 type GenerateResponse = {
   imageUrl?: string;
   model?: string;
@@ -80,6 +87,7 @@ type VerifyResponse = {
 const SESSIONS_KEY = "imagent.chatSessions";
 const ACTIVE_SESSION_KEY = "imagent.activeSession";
 const SETTINGS_KEY = "imagent.settings";
+const VERIFICATION_CACHE_KEY = "imagent.openrouterVerification";
 
 const defaultSettings: PlaygroundSettings = {
   apiKey: "",
@@ -124,6 +132,7 @@ export function GenerationChat() {
   const [draftSettings, setDraftSettings] = useState<PlaygroundSettings>(defaultSettings);
   const [availableModels, setAvailableModels] = useState<OpenRouterModelOption[]>(fallbackModelOptions);
   const [verification, setVerification] = useState<VerificationState>(emptyVerification);
+  const [verificationCache, setVerificationCache] = useState<VerificationCache | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -131,6 +140,8 @@ export function GenerationChat() {
   useEffect(() => {
     const savedSessions = readJson<ChatSession[]>(SESSIONS_KEY, []);
     const savedSettings = readJson<PlaygroundSettings>(SETTINGS_KEY, defaultSettings);
+    const savedVerificationCache = readJson<VerificationCache | null>(VERIFICATION_CACHE_KEY, null);
+    const initialSettings = {...defaultSettings, ...savedSettings};
     const initialSessions = savedSessions.length ? savedSessions : [newSession()];
     const savedActive = localStorage.getItem(ACTIVE_SESSION_KEY);
     const activeId = savedActive && initialSessions.some((session) => session.id === savedActive)
@@ -138,8 +149,17 @@ export function GenerationChat() {
       : initialSessions[0].id;
     setSessions(initialSessions);
     setActiveSessionId(activeId);
-    setSettings({...defaultSettings, ...savedSettings});
-    setDraftSettings({...defaultSettings, ...savedSettings});
+    setSettings(initialSettings);
+    setDraftSettings(initialSettings);
+    if (isUsableVerificationCache(savedVerificationCache, initialSettings.apiKey)) {
+      setVerificationCache(savedVerificationCache);
+      setAvailableModels(savedVerificationCache.models);
+      setVerification({
+        status: "valid",
+        message: savedVerificationCache.message || "Verified",
+        models: savedVerificationCache.models
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -169,6 +189,16 @@ export function GenerationChat() {
       return;
     }
 
+    if (isUsableVerificationCache(verificationCache, apiKey)) {
+      setAvailableModels(verificationCache.models);
+      setVerification({
+        status: "valid",
+        message: verificationCache.message || "Verified",
+        models: verificationCache.models
+      });
+      return;
+    }
+
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
       setVerification({ status: "verifying", message: "Checking key", models: [] });
@@ -185,10 +215,19 @@ export function GenerationChat() {
         }
 
         const models = data.models?.length ? data.models : fallbackModelOptions;
+        const message = data.warning || "Verified";
+        const nextCache = {
+          apiKey,
+          message,
+          models,
+          verifiedAt: new Date().toISOString()
+        };
         setAvailableModels(models);
+        setVerificationCache(nextCache);
+        localStorage.setItem(VERIFICATION_CACHE_KEY, JSON.stringify(nextCache));
         setVerification({
           status: "valid",
-          message: data.warning || "Verified",
+          message,
           models
         });
         setDraftSettings((current) => {
@@ -213,7 +252,7 @@ export function GenerationChat() {
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [draftSettings.apiKey, settingsOpen]);
+  }, [draftSettings.apiKey, settingsOpen, verificationCache]);
 
   const activeSession = sessions.find((session) => session.id === activeSessionId) || sessions[0];
   const hasConfiguredOpenRouter = settings.apiKey.trim().length > 0;
@@ -250,11 +289,17 @@ export function GenerationChat() {
     const selectedModel = availableModels.some((model) => model.id === draftSettings.model)
       ? draftSettings.model
       : availableModels[0]?.id || defaultSettings.model;
-    setSettings({
+    const nextSettings = {
       apiKey: draftSettings.apiKey.trim(),
       model: selectedModel,
       quality: draftSettings.quality
-    });
+    };
+    if (!nextSettings.apiKey) {
+      setVerification(emptyVerification);
+      setVerificationCache(null);
+      localStorage.removeItem(VERIFICATION_CACHE_KEY);
+    }
+    setSettings(nextSettings);
     setSettingsOpen(false);
   }
 
@@ -659,6 +704,10 @@ function labelForModel(model: string, models: OpenRouterModelOption[]) {
     return knownModel.name.replace("OpenAI ", "").replace("Black Forest Labs ", "");
   }
   return model.length > 30 ? `${model.slice(0, 30)}...` : model;
+}
+
+function isUsableVerificationCache(cache: VerificationCache | null, apiKey: string): cache is VerificationCache {
+  return Boolean(cache && cache.apiKey === apiKey.trim() && Array.isArray(cache.models) && cache.models.length > 0);
 }
 
 function readJson<T>(key: string, fallback: T): T {
