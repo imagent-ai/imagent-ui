@@ -1,0 +1,104 @@
+{
+  "artifacts": [],
+  "benchmark_version": "zai-live-smoke-v1",
+  "cases": [
+    {
+      "artifacts": [],
+      "capability": "plan",
+      "checks": [],
+      "cost_usd": 0.0,
+      "error": "agent did not produce a usable image: image backend HTTP 429: {\"error\":{\"code\":\"1113\",\"message\":\"Insufficient balance or no resource package. Please recharge.\"}}",
+      "id": "zai-live-smoke-001",
+      "latency_ms": 1569.765,
+      "numeric_id": 9001,
+      "prompt": "Create a clean square poster titled ZAI LIVE SMOKE with a simple green check mark and short subtitle Real image generation test.",
+      "score": 0.0,
+      "status": "error"
+    }
+  ],
+  "commit_sha": "05726618688d9044a512c96edb1faf4c01b73e25",
+  "completed_at": "2026-07-02T05:07:37.515411Z",
+  "configuration": {
+    "agent_config": {
+      "agent": {
+        "image_backend": {
+          "api_key_env": "ZAI_API_KEY",
+          "endpoint": "https://api.z.ai/api/paas/v4/images/generations",
+          "mode": "live",
+          "model": "glm-image",
+          "output_format": "png",
+          "provider": "zai",
+          "quality": "standard",
+          "send_output_format": false,
+          "send_seed": false,
+          "size": "1024x1024",
+          "timeout_seconds": 240
+        },
+        "verifier": {
+          "provider": "mock_text"
+        }
+      },
+      "evaluation": {
+        "image_judge": {
+          "provider": "mock_text"
+        }
+      },
+      "runtime": {
+        "candidates_per_round": 1,
+        "max_feedback_rounds": 0
+      }
+    },
+    "agent_manifest": {
+      "entrypoint": "agent:ImageAgent",
+      "id": "image-agent",
+      "name": "Image Agent",
+      "runtime": {},
+      "supports": {},
+      "version": "0.1.0"
+    },
+    "execution": {
+      "install": false
+    }
+  },
+  "dataset_version": "zai-live-smoke-v1.0.0",
+  "execution_time_ms": 1643.541,
+  "logs": [
+    {
+      "media_type": null,
+      "path": "logs/benchmark.log",
+      "sha256": "718e93a0e86cd5abc94ae4b0f7acf0158e17f4a52cd7b2475a281c4db029fba8",
+      "type": "log"
+    }
+  ],
+  "metrics": {
+    "case_count": 1,
+    "cost_usd": 0.0,
+    "failed_case_count": 1,
+    "latency_ms": {
+      "max": 1569.765,
+      "mean": 1569.765,
+      "min": 1569.765
+    },
+    "latency_p95_ms": 1569.765,
+    "overall_score": 0.0
+  },
+  "overall_score": 0.0,
+  "policy": {
+    "passed": false,
+    "reasons": [
+      "overall score 0.00 is below required 100.00",
+      "failed cases 1 exceeds allowed 0"
+    ],
+    "thresholds": {
+      "max_cost_usd": 999.0,
+      "max_failed_cases": 0,
+      "max_latency_p95_ms": 300000.0,
+      "minimum_score": 100.0
+    }
+  },
+  "repository": "../imagent",
+  "run_id": "3c67b98d-ca40-4de9-8f6b-f3f0cbd181a6",
+  "schema_version": "1.0",
+  "started_at": "2026-07-02T05:07:35.885385Z",
+  "status": "fail"
+}

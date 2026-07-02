@@ -1,0 +1,14 @@
+subnets.giize.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8765
+}
+
+dlcourse.gleeze.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8080
+}
+
+imagent.ai, www.imagent.ai {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3002
+}

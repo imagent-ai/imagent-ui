@@ -1,0 +1,128 @@
+{
+  "artifacts": [
+    {
+      "media_type": "image/png",
+      "path": "cases/openrouter-live-smoke-001/images/openrouter-live-smoke-001.png",
+      "sha256": "dea704b06880888b768c09fc3e11b3ae1abe5a0eaaa7b8b81f0530559e631dea",
+      "type": "image"
+    },
+    {
+      "media_type": "application/json",
+      "path": "cases/openrouter-live-smoke-001/traces/openrouter-live-smoke-001.json",
+      "sha256": "14ee96c6eb1ba8da1ca7ca2232cae21100e316f9f3d7e07f05043bd2fd1d21fb",
+      "type": "trace"
+    }
+  ],
+  "benchmark_version": "openrouter-live-smoke-v1",
+  "cases": [
+    {
+      "artifacts": [
+        {
+          "media_type": "image/png",
+          "path": "cases/openrouter-live-smoke-001/images/openrouter-live-smoke-001.png",
+          "sha256": "dea704b06880888b768c09fc3e11b3ae1abe5a0eaaa7b8b81f0530559e631dea",
+          "type": "image"
+        },
+        {
+          "media_type": "application/json",
+          "path": "cases/openrouter-live-smoke-001/traces/openrouter-live-smoke-001.json",
+          "sha256": "14ee96c6eb1ba8da1ca7ca2232cae21100e316f9f3d7e07f05043bd2fd1d21fb",
+          "type": "trace"
+        }
+      ],
+      "capability": "plan",
+      "checks": [],
+      "cost_usd": 0.003527,
+      "error": null,
+      "id": "openrouter-live-smoke-001",
+      "latency_ms": 10885.325,
+      "numeric_id": 9101,
+      "prompt": "Create a clean square poster titled OPENROUTER LIVE SMOKE with a simple blue check mark and short subtitle Real image generation test.",
+      "score": 100.0,
+      "status": "pass"
+    }
+  ],
+  "commit_sha": "05726618688d9044a512c96edb1faf4c01b73e25",
+  "completed_at": "2026-07-02T09:21:29.362635Z",
+  "configuration": {
+    "agent_config": {
+      "agent": {
+        "image_backend": {
+          "api_key_env": "OPENROUTER_API_KEY",
+          "endpoint": "https://openrouter.ai/api/v1/images",
+          "mode": "live",
+          "model": "openai/gpt-image-1-mini",
+          "output_format": "png",
+          "provider": "openrouter",
+          "quality": "low",
+          "referer": "https://github.com/imagent-ai/imagent",
+          "send_output_format": false,
+          "send_seed": false,
+          "timeout_seconds": 240,
+          "title": "imagent live smoke"
+        },
+        "verifier": {
+          "provider": "mock_text"
+        }
+      },
+      "evaluation": {
+        "image_judge": {
+          "provider": "mock_text"
+        }
+      },
+      "runtime": {
+        "candidates_per_round": 1,
+        "max_feedback_rounds": 0
+      }
+    },
+    "agent_manifest": {
+      "entrypoint": "agent:ImageAgent",
+      "id": "image-agent",
+      "name": "Image Agent",
+      "runtime": {},
+      "supports": {},
+      "version": "0.1.0"
+    },
+    "execution": {
+      "install": false
+    }
+  },
+  "dataset_version": "openrouter-live-smoke-v1.0.0",
+  "execution_time_ms": 11377.675,
+  "logs": [
+    {
+      "media_type": null,
+      "path": "logs/benchmark.log",
+      "sha256": "d6fa6d0d5dad27f6f8e749216b550cd73313b67fb19beec76a45a2f41f7d3b0f",
+      "type": "log"
+    }
+  ],
+  "metrics": {
+    "case_count": 1,
+    "cost_usd": 0.003527,
+    "failed_case_count": 0,
+    "latency_ms": {
+      "max": 10885.325,
+      "mean": 10885.325,
+      "min": 10885.325
+    },
+    "latency_p95_ms": 10885.325,
+    "overall_score": 100.0
+  },
+  "overall_score": 100.0,
+  "policy": {
+    "passed": true,
+    "reasons": [],
+    "thresholds": {
+      "max_cost_usd": 999.0,
+      "max_failed_cases": 0,
+      "max_latency_p95_ms": 300000.0,
+      "minimum_score": 100.0
+    }
+  },
+  "repository": "/home/bear/Documents/imagent-ai/imagent",
+  "run_id": "bdab5c64-c0ac-47aa-a187-2370657edd23",
+  "schema_version": "1.0",
+  "started_at": "2026-07-02T09:21:17.985435Z",
+  "status": "pass"
+}
