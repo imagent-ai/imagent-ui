@@ -13,7 +13,7 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Imagent Bench",
+  title: "Imagent",
   description: "Image agent playground and benchmark leaderboard",
   icons: {
     icon: "/brand/imagent-ai-avatar.jpg",

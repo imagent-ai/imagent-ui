@@ -424,7 +424,7 @@ export function GenerationChat() {
           </div>
         </div>
         <footer className="generation-sidebar-footer">
-          <strong>IMAGENT BENCH</strong>
+          <strong>IMAGENT</strong>
           <span>made by Gittensor subnet 74</span>
         </footer>
       </aside>
@@ -439,7 +439,7 @@ export function GenerationChat() {
           ) : (
             <button className="openrouter-placeholder" type="button" onClick={openSettings}>
               <KeyRound size={16} />
-              <span>Configure OpenRouter to choose an image model</span>
+              <span>Configure OpenRouter</span>
             </button>
           )}
           <div className="topbar-actions">
@@ -454,8 +454,8 @@ export function GenerationChat() {
           {!activeSession || activeSession.messages.length === 0 ? (
             <section className="generation-empty">
               <img className="empty-mark" src="/brand/imagent-ai-avatar.jpg" alt="" />
-              <span className="empty-kicker">Gittensor subnet 74 · image agent · benchmark ready</span>
-              <h1>What should imagent create?</h1>
+              <span className="empty-kicker">Subnet 74 · image agent · benchmark ready</span>
+              <h1>What should Imagent create?</h1>
               <div className="generation-showcase" aria-hidden="true">
                 <div className="showcase-image">
                   <span className="showcase-sun" />
@@ -541,7 +541,7 @@ export function GenerationChat() {
             <textarea
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Message imagent"
+              placeholder="Message Imagent"
               rows={1}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
