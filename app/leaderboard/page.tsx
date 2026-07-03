@@ -1,4 +1,4 @@
-import { Activity, Crown, ImageIcon, Medal, ShieldCheck, Timer, TrendingUp, WalletCards } from "lucide-react";
+import { Activity, BarChart3, Crown, ImageIcon, Medal, ShieldCheck, Timer, TrendingUp, WalletCards } from "lucide-react";
 import type { ReactNode } from "react";
 import { LeaderboardBoard } from "@/app/components/LeaderboardBoard";
 import { type LeaderboardEntry, listLeaderboardEntries } from "@/lib/reports";
@@ -33,6 +33,7 @@ export default async function LeaderboardPage() {
     return best;
   }, null);
   const latestFive = chronological.slice(-5).reverse();
+  const featureComparison = buildFeatureComparison(leader ?? null, entries);
 
   return (
     <div className="leaderboard-page">
@@ -119,6 +120,12 @@ export default async function LeaderboardPage() {
         ) : null}
       </section>
 
+      <FeatureComparisonPanel
+        baseline={featureComparison.baseline}
+        current={leader ?? null}
+        rows={featureComparison.rows}
+      />
+
       <section className="podium-grid">
         {topThree.map((entry, index) => (
           <a className={`podium-card rank-${index + 1}`} href={`/reports/${entry.runId}`} key={entry.runId}>
@@ -141,6 +148,13 @@ export default async function LeaderboardPage() {
   );
 }
 
+type FeatureComparisonRow = {
+  baseline: number | null;
+  current: number | null;
+  delta: number | null;
+  name: string;
+};
+
 function HeroStat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="hero-stat">
@@ -153,6 +167,91 @@ function HeroStat({ icon, label, value }: { icon: ReactNode; label: string; valu
   );
 }
 
+function FeatureComparisonPanel({
+  baseline,
+  current,
+  rows
+}: {
+  baseline: LeaderboardEntry | null;
+  current: LeaderboardEntry | null;
+  rows: FeatureComparisonRow[];
+}) {
+  const baselineScore = baseline?.score ?? current?.improvement.baselineScore ?? null;
+  const overallDelta = current && baselineScore !== null ? current.score - baselineScore : null;
+  const visibleRows: FeatureComparisonRow[] = [
+    {
+      baseline: baselineScore,
+      current: current?.score ?? null,
+      delta: overallDelta,
+      name: "overall_benchmark"
+    },
+    ...rows
+  ];
+  const averageFeatureDelta = averageDelta(rows);
+
+  return (
+    <section className="feature-comparison" aria-label="Benchmark feature improvement">
+      <div className="feature-comparison-header">
+        <div>
+          <span className="live-chip"><BarChart3 size={13} /> Feature delta</span>
+          <h2>Before vs current frontier</h2>
+          <p>
+            {baseline
+              ? `Comparing @${current?.contributor.login ?? "frontier"} against @${baseline.contributor.login}.`
+              : "Baseline feature scores will connect as benchmark reports include judge dimensions."}
+          </p>
+        </div>
+        <div className="feature-summary-grid">
+          <FeatureSummary label="Current top" value={current ? current.score.toFixed(2) : "0.00"} detail={current ? `@${current.contributor.login}` : "waiting"} />
+          <FeatureSummary label="Before score" value={baselineScore === null ? "N/A" : baselineScore.toFixed(2)} detail={baseline ? `@${baseline.contributor.login}` : "baseline"} />
+          <FeatureSummary label="Feature avg" value={formatDelta(averageFeatureDelta)} detail={rows.length ? `${rows.length} dimensions` : "pending"} />
+        </div>
+      </div>
+
+      <div className="feature-legend" aria-hidden="true">
+        <span><i className="before" />Before</span>
+        <span><i className="current" />Current top</span>
+      </div>
+
+      <div className="feature-bars">
+        {visibleRows.map((row) => (
+          <div className="feature-row" key={row.name}>
+            <div className="feature-row-label">
+              <strong>{formatFeatureName(row.name)}</strong>
+              <span>{formatScore(row.baseline)} before · {formatScore(row.current)} current</span>
+            </div>
+            <div className="feature-bar-stack">
+              <div className="feature-bar-line before">
+                <span style={{ width: scoreWidth(row.baseline) }} />
+              </div>
+              <div className="feature-bar-line current">
+                <span style={{ width: scoreWidth(row.current) }} />
+              </div>
+            </div>
+            <span className={`delta-badge ${deltaTone(row.delta)}`}>{formatDelta(row.delta)}</span>
+          </div>
+        ))}
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="feature-empty">
+          Dimension-level bars will appear after OpenRouter vision judge reports include per-feature scores.
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function FeatureSummary({ detail, label, value }: { detail: string; label: string; value: string }) {
+  return (
+    <div className="feature-summary">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+    </div>
+  );
+}
+
 function ProjectMetric({ detail, label, value }: { detail: string; label: string; value: string }) {
   return (
     <div className="project-metric">
@@ -161,6 +260,107 @@ function ProjectMetric({ detail, label, value }: { detail: string; label: string
       <small>{detail}</small>
     </div>
   );
+}
+
+function buildFeatureComparison(current: LeaderboardEntry | null, entries: LeaderboardEntry[]) {
+  if (!current) {
+    return { baseline: null, rows: [] as FeatureComparisonRow[] };
+  }
+
+  const baseline = findBaselineEntry(current, entries);
+  const currentDimensions = dimensionMap(current);
+  const baselineDimensions = baseline ? dimensionMap(baseline) : new Map<string, number>();
+  const names = Array.from(new Set([...currentDimensions.keys(), ...baselineDimensions.keys()]));
+
+  const rows = names
+    .map((name) => {
+      const currentScore = currentDimensions.get(name) ?? null;
+      const baselineScore = baselineDimensions.get(name) ?? null;
+      return {
+        baseline: baselineScore,
+        current: currentScore,
+        delta: currentScore === null || baselineScore === null ? null : currentScore - baselineScore,
+        name
+      };
+    })
+    .sort((left, right) => {
+      if (left.delta !== null && right.delta !== null && right.delta !== left.delta) {
+        return right.delta - left.delta;
+      }
+      return formatFeatureName(left.name).localeCompare(formatFeatureName(right.name));
+    });
+
+  return { baseline, rows };
+}
+
+function findBaselineEntry(current: LeaderboardEntry, entries: LeaderboardEntry[]) {
+  const candidates = entries.filter((entry) => entry.runId !== current.runId);
+  const baselineCommit = current.improvement.baselineCommit;
+
+  if (baselineCommit) {
+    const commitMatch = candidates.find((entry) => commitMatches(entry.commitSha, baselineCommit));
+    if (commitMatch) {
+      return commitMatch;
+    }
+  }
+
+  const baselineScore = current.improvement.baselineScore;
+  const previousEntries = candidates
+    .filter((entry) => isBeforeOrSame(entry.completedAt, current.completedAt))
+    .sort((left, right) => Date.parse(right.completedAt) - Date.parse(left.completedAt));
+
+  if (baselineScore !== null) {
+    const scoreMatch = previousEntries.find((entry) => Math.abs(entry.score - baselineScore) < 0.005);
+    if (scoreMatch) {
+      return scoreMatch;
+    }
+  }
+
+  return previousEntries[0] ?? candidates[0] ?? null;
+}
+
+function dimensionMap(entry: LeaderboardEntry) {
+  return new Map(entry.dimensions.map((dimension) => [dimension.name, dimension.score]));
+}
+
+function commitMatches(commitSha: string, baselineCommit: string) {
+  return commitSha === baselineCommit || commitSha.startsWith(baselineCommit) || baselineCommit.startsWith(commitSha);
+}
+
+function isBeforeOrSame(value: string, reference: string) {
+  const timestamp = Date.parse(value);
+  const referenceTimestamp = Date.parse(reference);
+  if (!Number.isFinite(timestamp) || !Number.isFinite(referenceTimestamp)) {
+    return true;
+  }
+  return timestamp <= referenceTimestamp;
+}
+
+function averageDelta(rows: FeatureComparisonRow[]) {
+  const deltas = rows
+    .map((row) => row.delta)
+    .filter((value): value is number => value !== null);
+  if (!deltas.length) {
+    return null;
+  }
+  return deltas.reduce((total, value) => total + value, 0) / deltas.length;
+}
+
+function scoreWidth(value: number | null) {
+  if (value === null) {
+    return "0%";
+  }
+  return `${Math.max(0, Math.min(100, value))}%`;
+}
+
+function formatScore(value: number | null) {
+  return value === null ? "N/A" : value.toFixed(1);
+}
+
+function formatFeatureName(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function formatDelta(value: number | null) {
