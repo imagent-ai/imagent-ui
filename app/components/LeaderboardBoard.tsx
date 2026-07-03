@@ -1,27 +1,41 @@
 "use client";
 
-import { ArrowUpRight, CheckCircle2, GitMerge, GitPullRequestClosed, Search, Timer, WalletCards, XCircle } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Activity, ArrowUpRight, CheckCircle2, GitMerge, GitPullRequestClosed, Minus, Search, Timer, TrendingDown, TrendingUp, WalletCards, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import type { LeaderboardEntry } from "@/lib/reports";
 
-type Filter = "all" | "merged" | "closed" | "failed";
+type Filter = "all" | "eligible" | "merged" | "closed" | "failed";
 
 const filters: Array<{ id: Filter; label: string }> = [
   { id: "all", label: "All" },
+  { id: "eligible", label: "Eligible" },
   { id: "merged", label: "Merged" },
   { id: "closed", label: "Closed" },
   { id: "failed", label: "Failed" }
 ];
 
 export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
+  const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      router.refresh();
+    }, 30000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [router]);
 
   const visibleEntries = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return entries.filter((entry) => {
       const matchesFilter =
         filter === "all" ||
+        (filter === "eligible" && entry.improvement.mergeEligible) ||
         (filter === "merged" && entry.pullRequest.state === "merged") ||
         (filter === "closed" && entry.pullRequest.state === "closed") ||
         (filter === "failed" && entry.status === "fail");
@@ -42,6 +56,8 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
         entry.pullRequest.title,
         String(entry.pullRequest.number),
         entry.benchmarkVersion,
+        entry.improvement.label,
+        entry.judgeModel,
         entry.runId
       ]
         .filter(Boolean)
@@ -57,9 +73,10 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
       <div className="table-toolbar">
         <div>
           <h2>All benchmarked miners</h2>
-          <p>{visibleEntries.length} of {entries.length} reports</p>
+          <p>{visibleEntries.length} of {entries.length} reports · auto-refreshes every 30s</p>
         </div>
         <div className="leaderboard-controls">
+          <span className="leaderboard-live"><Activity size={13} /> Live</span>
           <label className="leaderboard-search">
             <Search size={15} />
             <input
@@ -91,6 +108,7 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
               <th>Miner</th>
               <th>Pull Request</th>
               <th>Score</th>
+              <th>Improvement</th>
               <th>Result</th>
               <th>Latency</th>
               <th>Cost</th>
@@ -125,6 +143,27 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
                   <div className="score-cell">
                     <strong>{entry.score.toFixed(2)}</strong>
                     <span><i style={{ width: `${Math.max(3, Math.min(100, entry.score))}%` }} /></span>
+                    {entry.dimensions.length > 0 ? (
+                      <div className="dimension-strip">
+                        {entry.dimensions.slice(0, 3).map((dimension) => (
+                          <small key={dimension.name}>{formatDimension(dimension.name)} {dimension.score.toFixed(0)}</small>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </td>
+                <td>
+                  <div className="improvement-cell">
+                    <span className={`delta-badge ${deltaTone(entry.improvement.delta)}`}>
+                      {deltaIcon(entry.improvement.delta)}
+                      {formatDelta(entry.improvement.delta)}
+                    </span>
+                    <small>{entry.improvement.label}</small>
+                    {entry.improvement.baselineScore !== null ? (
+                      <em>vs {entry.improvement.baselineScore.toFixed(2)}</em>
+                    ) : (
+                      <em>baseline pending</em>
+                    )}
                   </div>
                 </td>
                 <td>
@@ -145,7 +184,7 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
             ))}
             {visibleEntries.length === 0 ? (
               <tr>
-                <td className="empty-table-cell" colSpan={8}>No benchmark reports match this view.</td>
+                <td className="empty-table-cell" colSpan={9}>No benchmark reports match this view.</td>
               </tr>
             ) : null}
           </tbody>
@@ -153,4 +192,34 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
       </div>
     </section>
   );
+}
+
+function formatDelta(value: number | null) {
+  if (value === null) {
+    return "N/A";
+  }
+  if (Math.abs(value) < 0.005) {
+    return "+0.00";
+  }
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}`;
+}
+
+function deltaTone(value: number | null) {
+  if (value === null || Math.abs(value) < 0.005) {
+    return "neutral";
+  }
+  return value > 0 ? "positive" : "negative";
+}
+
+function deltaIcon(value: number | null) {
+  if (value === null || Math.abs(value) < 0.005) {
+    return <Minus size={13} />;
+  }
+  return value > 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />;
+}
+
+function formatDimension(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
 }

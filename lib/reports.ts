@@ -19,7 +19,18 @@ export type CaseResult = {
   cost_usd: number;
   checks: Array<Record<string, unknown>>;
   artifacts: Artifact[];
+  dimensions?: Record<string, unknown> | null;
+  judge?: Record<string, unknown> | null;
   error?: string | null;
+};
+
+export type RankingMetadata = {
+  baseline_score?: number | null;
+  baseline_commit?: string | null;
+  candidate_score?: number | null;
+  delta?: number | null;
+  label?: string | null;
+  merge_eligible?: boolean | null;
 };
 
 export type BenchmarkReport = {
@@ -46,6 +57,7 @@ export type BenchmarkReport = {
     cost_usd: number;
   };
   cases: CaseResult[];
+  ranking?: RankingMetadata | null;
   artifacts: Artifact[];
   logs: Artifact[];
   configuration: {
@@ -96,6 +108,20 @@ export type LeaderboardEntry = {
   costUsd: number;
   benchmarkVersion: string;
   completedAt: string;
+  dimensions: Array<{
+    name: string;
+    score: number;
+  }>;
+  improvement: {
+    baselineScore: number | null;
+    baselineCommit: string | null;
+    candidateScore: number;
+    delta: number | null;
+    label: string;
+    mergeEligible: boolean;
+    source: "ranking" | "history" | "none";
+  };
+  judgeModel: string | null;
   contributor: Required<Pick<ContributorMetadata, "login">> & Omit<ContributorMetadata, "login">;
   pullRequest: PullRequestMetadata;
 };
@@ -127,13 +153,15 @@ export async function getReport(runId: string): Promise<BenchmarkReport | null> 
 
 export async function listLeaderboardEntries(): Promise<LeaderboardEntry[]> {
   const reports = await listReports();
-  return reports.map((report, index) => toLeaderboardEntry(report, index + 1));
+  const historicalBaselines = buildHistoricalBaselines(reports);
+  return reports.map((report, index) => toLeaderboardEntry(report, index + 1, historicalBaselines.get(report.run_id) ?? null));
 }
 
-export function toLeaderboardEntry(report: BenchmarkReport, rank = 1): LeaderboardEntry {
+export function toLeaderboardEntry(report: BenchmarkReport, rank = 1, historicalBaselineScore: number | null = null): LeaderboardEntry {
   const agentName = report.configuration.agent_manifest.name || report.configuration.agent_manifest.id || "Image Agent";
   const contributor = normalizeContributor(report);
   const pullRequest = normalizePullRequest(report);
+  const improvement = normalizeImprovement(report, historicalBaselineScore);
   return {
     rank,
     runId: report.run_id,
@@ -146,6 +174,9 @@ export function toLeaderboardEntry(report: BenchmarkReport, rank = 1): Leaderboa
     costUsd: report.metrics.cost_usd,
     benchmarkVersion: report.benchmark_version,
     completedAt: report.completed_at,
+    dimensions: normalizeDimensions(report),
+    improvement,
+    judgeModel: normalizeJudgeModel(report),
     contributor,
     pullRequest
   };
@@ -204,6 +235,126 @@ function normalizePullRequest(report: BenchmarkReport): PullRequestMetadata {
     merged_at: report.status === "pass" ? report.completed_at : null,
     closed_at: report.status === "fail" ? report.completed_at : null
   };
+}
+
+function buildHistoricalBaselines(reports: BenchmarkReport[]) {
+  const baselines = new Map<string, number | null>();
+  const chronological = [...reports].sort((left, right) => Date.parse(left.completed_at) - Date.parse(right.completed_at));
+  let bestScore: number | null = null;
+
+  for (const report of chronological) {
+    baselines.set(report.run_id, bestScore);
+    if (Number.isFinite(report.overall_score)) {
+      bestScore = bestScore === null ? report.overall_score : Math.max(bestScore, report.overall_score);
+    }
+  }
+
+  return baselines;
+}
+
+function normalizeImprovement(report: BenchmarkReport, historicalBaselineScore: number | null): LeaderboardEntry["improvement"] {
+  const ranking = report.ranking ?? null;
+  const candidateScore = finiteNumber(ranking?.candidate_score) ?? report.overall_score;
+  const baselineScore = finiteNumber(ranking?.baseline_score) ?? historicalBaselineScore;
+  const delta = finiteNumber(ranking?.delta) ?? (baselineScore === null ? null : candidateScore - baselineScore);
+  const label = normalizeImprovementLabel(ranking?.label, delta, baselineScore);
+  const mergeEligible = typeof ranking?.merge_eligible === "boolean"
+    ? ranking.merge_eligible
+    : Boolean(report.status === "pass" && delta !== null && delta > 0);
+
+  return {
+    baselineScore,
+    baselineCommit: ranking?.baseline_commit ?? null,
+    candidateScore,
+    delta,
+    label,
+    mergeEligible,
+    source: ranking ? "ranking" : baselineScore === null ? "none" : "history"
+  };
+}
+
+function normalizeImprovementLabel(label: unknown, delta: number | null, baselineScore: number | null) {
+  if (typeof label === "string" && label.trim()) {
+    return label.trim();
+  }
+  if (baselineScore === null || delta === null) {
+    return "baseline-unavailable";
+  }
+  if (delta < 0) {
+    return "score-regression";
+  }
+  if (delta >= 10) {
+    return "improvement-major";
+  }
+  if (delta >= 5) {
+    return "improvement-strong";
+  }
+  if (delta > 0) {
+    return "improvement-minor";
+  }
+  return "unchanged";
+}
+
+function normalizeDimensions(report: BenchmarkReport): LeaderboardEntry["dimensions"] {
+  const totals = new Map<string, { count: number; total: number }>();
+
+  for (const item of report.cases) {
+    if (!item.dimensions || Array.isArray(item.dimensions)) {
+      continue;
+    }
+    Object.entries(item.dimensions).forEach(([name, value]) => {
+      const score = finiteNumber(value);
+      if (score === null) {
+        return;
+      }
+      const existing = totals.get(name) ?? { count: 0, total: 0 };
+      existing.count += 1;
+      existing.total += score;
+      totals.set(name, existing);
+    });
+  }
+
+  return Array.from(totals.entries())
+    .map(([name, value]) => ({
+      name,
+      score: value.count > 0 ? value.total / value.count : 0
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function normalizeJudgeModel(report: BenchmarkReport) {
+  for (const item of report.cases) {
+    const model = stringFromRecord(item.judge, "model") ?? stringFromRecord(item.judge, "provider");
+    if (model) {
+      return model;
+    }
+  }
+
+  const imageJudge = report.configuration.agent_config?.evaluation;
+  if (isRecord(imageJudge)) {
+    const nested = imageJudge.image_judge;
+    if (isRecord(nested)) {
+      return stringFromRecord(nested, "model") ?? stringFromRecord(nested, "provider");
+    }
+  }
+
+  return null;
+}
+
+function finiteNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function stringFromRecord(value: unknown, key: string) {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const candidate = value[key];
+  return typeof candidate === "string" && candidate.trim() ? candidate.trim() : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function avatarFor(login: string) {
