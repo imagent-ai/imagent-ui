@@ -4,11 +4,11 @@
   "repository": "imagent-ai/imagent",
   "commit_sha": "9f4a72c8e3d14b6f7a0d2c5e18b91a6d3c84f207",
   "pull_request": {
-    "number": 214,
-    "title": "feat: add staged prompt planner for visual composition",
+    "number": 54,
+    "title": "feat: support benchmark smoke workflows",
     "state": "merged",
-    "html_url": "https://github.com/imagent-ai/imagent/pull/214",
-    "merged_at": "2026-07-04T04:28:13Z",
+    "html_url": "https://github.com/imagent-ai/imagent/pull/54",
+    "merged_at": "2026-07-02T16:00:56Z",
     "closed_at": null
   },
   "contributor": {

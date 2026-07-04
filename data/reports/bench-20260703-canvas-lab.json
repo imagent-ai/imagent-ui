@@ -4,12 +4,12 @@
   "repository": "imagent-ai/imagent",
   "commit_sha": "c2d91f7b45fa3140ad53fe771d9bd50c0d73e216",
   "pull_request": {
-    "number": 193,
-    "title": "fix: reduce over-sharpening in generated UI mockups",
-    "state": "closed",
-    "html_url": "https://github.com/imagent-ai/imagent/pull/193",
-    "merged_at": null,
-    "closed_at": "2026-07-03T09:12:27Z"
+    "number": 51,
+    "title": "fix: keep style preferences out of visible text",
+    "state": "merged",
+    "html_url": "https://github.com/imagent-ai/imagent/pull/51",
+    "merged_at": "2026-07-02T03:17:07Z",
+    "closed_at": null
   },
   "contributor": {
     "login": "mitchelltop",

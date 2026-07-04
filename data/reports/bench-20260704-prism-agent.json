@@ -4,11 +4,11 @@
   "repository": "imagent-ai/imagent",
   "commit_sha": "6b2d80a4f5190b44e92d4f8d71a64bb0a1e93f2c",
   "pull_request": {
-    "number": 207,
-    "title": "feat: tune subject isolation and typography repair",
+    "number": 53,
+    "title": "fix: harden image agent input boundaries",
     "state": "merged",
-    "html_url": "https://github.com/imagent-ai/imagent/pull/207",
-    "merged_at": "2026-07-03T22:16:40Z",
+    "html_url": "https://github.com/imagent-ai/imagent/pull/53",
+    "merged_at": "2026-07-02T03:17:26Z",
     "closed_at": null
   },
   "contributor": {

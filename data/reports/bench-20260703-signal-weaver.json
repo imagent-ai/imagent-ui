@@ -4,11 +4,11 @@
   "repository": "imagent-ai/imagent",
   "commit_sha": "a18e736c0d5b4d9f8e1a622f17c0b9335d0a7e49",
   "pull_request": {
-    "number": 199,
-    "title": "feat: improve judge-aware prompt expansion",
+    "number": 52,
+    "title": "fix: handle arithmetic evaluation errors gracefully",
     "state": "merged",
-    "html_url": "https://github.com/imagent-ai/imagent/pull/199",
-    "merged_at": "2026-07-03T14:46:05Z",
+    "html_url": "https://github.com/imagent-ai/imagent/pull/52",
+    "merged_at": "2026-07-02T03:17:18Z",
     "closed_at": null
   },
   "contributor": {

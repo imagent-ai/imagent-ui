@@ -4,12 +4,12 @@
   "repository": "imagent-ai/imagent",
   "commit_sha": "4d0b7a5c3e621fa9d8b50d127d4735c16e8a0f91",
   "pull_request": {
-    "number": 188,
-    "title": "feat: add low-cost draft mode for image candidates",
-    "state": "closed",
-    "html_url": "https://github.com/imagent-ai/imagent/pull/188",
-    "merged_at": null,
-    "closed_at": "2026-07-02T20:37:55Z"
+    "number": 50,
+    "title": "fix: reject non-boolean vision verifier verdicts",
+    "state": "merged",
+    "html_url": "https://github.com/imagent-ai/imagent/pull/50",
+    "merged_at": "2026-07-02T03:16:56Z",
+    "closed_at": null
   },
   "contributor": {
     "login": "mitchelltop",
