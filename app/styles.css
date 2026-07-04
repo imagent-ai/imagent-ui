@@ -1132,6 +1132,7 @@ textarea:focus-visible {
 
 .generation-composer .quality-dropdown {
   justify-self: end;
+  width: auto;
 }
 
 .generation-composer .composer-configure-button,
@@ -1149,7 +1150,7 @@ textarea:focus-visible {
 }
 
 .generation-composer .quality-dropdown-trigger {
-  gap: 6px;
+  gap: 5px;
 }
 
 .model-dropdown-trigger,
@@ -2936,7 +2937,7 @@ textarea:focus-visible {
 
   .composer-toolbar {
     gap: 6px;
-    grid-template-columns: minmax(0, 1fr) 96px 38px;
+    grid-template-columns: minmax(0, 1fr) max-content 38px;
   }
 
   .model-dropdown {
@@ -2944,7 +2945,7 @@ textarea:focus-visible {
   }
 
   .quality-dropdown {
-    width: 96px;
+    width: auto;
   }
 
   .dropdown-copy strong {

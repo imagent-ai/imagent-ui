@@ -538,6 +538,7 @@ export function GenerationChat() {
               {hasConfiguredOpenRouter ? (
                 <>
                   <ModelDropdown
+                    hideLabel
                     id="composer-model"
                     label="Model"
                     models={composerModelChoices}
@@ -548,6 +549,7 @@ export function GenerationChat() {
                     onSelect={updateComposerModel}
                   />
                   <QualityDropdown
+                    hideLabel
                     open={openDropdown === "composer-quality"}
                     selectedQuality={settings.quality}
                     onOpenChange={(open) => setOpenDropdown(open ? "composer-quality" : null)}
@@ -665,6 +667,7 @@ export function GenerationChat() {
 function ModelDropdown({
   disabled = false,
   emptyLabel = "No models loaded",
+  hideLabel = false,
   id,
   label,
   models,
@@ -676,6 +679,7 @@ function ModelDropdown({
 }: {
   disabled?: boolean;
   emptyLabel?: string;
+  hideLabel?: boolean;
   id: string;
   label: string;
   models: OpenRouterModelOption[];
@@ -714,7 +718,7 @@ function ModelDropdown({
       >
         <Sparkles size={15} />
         <span className="dropdown-copy">
-          <small>{label}</small>
+          {hideLabel ? null : <small>{label}</small>}
           <strong>{disabled ? emptyLabel : selected?.name || selectedModelName}</strong>
         </span>
         <ChevronDown size={15} />
@@ -750,11 +754,13 @@ function ModelDropdown({
 }
 
 function QualityDropdown({
+  hideLabel = false,
   onOpenChange,
   onSelect,
   open,
   selectedQuality
 }: {
+  hideLabel?: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (quality: string) => void;
   open: boolean;
@@ -783,7 +789,7 @@ function QualityDropdown({
         onClick={() => onOpenChange(!open)}
       >
         <span className="dropdown-copy">
-          <small>Level</small>
+          {hideLabel ? null : <small>Level</small>}
           <strong>{selectedQuality}</strong>
         </span>
         <ChevronDown size={15} />
