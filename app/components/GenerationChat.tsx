@@ -262,8 +262,14 @@ export function GenerationChat() {
   const canSaveSettings = !draftApiKey || verification.status === "valid";
   const selectedDraftModel = modelChoices.find((model) => model.id === draftSettings.model);
   const canSubmit = useMemo(() => prompt.trim().length > 0 && !isGenerating, [prompt, isGenerating]);
+  const canCreateNewSession = !activeSession || activeSession.messages.length > 0 || prompt.trim().length > 0;
 
   function createSession() {
+    if (!canCreateNewSession && activeSession) {
+      setActiveSessionId(activeSession.id);
+      return;
+    }
+
     const session = newSession();
     setSessions((current) => [session, ...current]);
     setActiveSessionId(session.id);
@@ -395,7 +401,7 @@ export function GenerationChat() {
   return (
     <div className="generation-shell">
       <aside className="history-sidebar" aria-label="Chat history">
-        <button className="new-chat" type="button" onClick={createSession}>
+        <button className="new-chat" type="button" onClick={createSession} aria-disabled={!canCreateNewSession}>
           <MessageSquarePlus size={17} />
           New chat
         </button>
@@ -425,7 +431,7 @@ export function GenerationChat() {
         </div>
         <footer className="generation-sidebar-footer">
           <strong>IMAGENT</strong>
-          <span>made by Gittensor subnet 74</span>
+          <span>built by Gittensor subnet 74</span>
         </footer>
       </aside>
 
@@ -464,22 +470,12 @@ export function GenerationChat() {
                   <span className="showcase-plate plate-one" />
                   <span className="showcase-plate plate-two" />
                   <span className="showcase-plate plate-three" />
+                  <span className="showcase-halo" />
+                  <span className="showcase-core" />
+                  <span className="showcase-node node-one" />
+                  <span className="showcase-node node-two" />
+                  <span className="showcase-node node-three" />
                   <span className="showcase-scanline" />
-                </div>
-                <div className="showcase-meta">
-                  {hasConfiguredOpenRouter ? (
-                    <>
-                      <span>{labelForModel(settings.model, availableModels)}</span>
-                      <strong>{settings.quality}</strong>
-                      <span>preview</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>OpenRouter</span>
-                      <strong>configure</strong>
-                      <span>required</span>
-                    </>
-                  )}
                 </div>
               </div>
               <div className="prompt-suggestions">
@@ -569,8 +565,14 @@ export function GenerationChat() {
         >
           <section className="settings-modal custom-scrollbar" role="dialog" aria-modal="true" aria-labelledby="settings-title">
             <header>
-              <div>
-                <h2 id="settings-title">Generation settings</h2>
+              <div className="settings-title-row">
+                <span className="settings-title-icon">
+                  <Settings size={18} />
+                </span>
+                <div>
+                  <h2 id="settings-title">Generation settings</h2>
+                  <p>OpenRouter image generation</p>
+                </div>
               </div>
               <button type="button" onClick={cancelSettings} aria-label="Close settings">
                 <X size={18} />

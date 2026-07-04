@@ -25,7 +25,7 @@ export function AppFooter() {
             <img src="/brand/imagent-ai-avatar.jpg" alt="" />
             <strong>IMAGENT</strong>
           </Link>
-          <p>Image generation benchmark and miner leaderboard made by Gittensor subnet 74.</p>
+          <p>Image generation benchmark and miner leaderboard built by Gittensor subnet 74.</p>
         </div>
 
         <nav className="footer-links" aria-label="Footer navigation">
