@@ -522,6 +522,18 @@ export function GenerationChat() {
 
         <div className="generation-composer-wrap">
           <form className="generation-composer" onSubmit={submit}>
+            <textarea
+              value={prompt}
+              onChange={(event) => setPrompt(event.target.value)}
+              placeholder="Message Imagent"
+              rows={1}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
+            />
             <div className="composer-toolbar">
               {hasConfiguredOpenRouter ? (
                 <>
@@ -548,20 +560,6 @@ export function GenerationChat() {
                   Configure OpenRouter
                 </button>
               )}
-            </div>
-            <div className="composer-input-row">
-              <textarea
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                placeholder="Message Imagent"
-                rows={1}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    event.currentTarget.form?.requestSubmit();
-                  }
-                }}
-              />
               <button className="composer-send-button" type="submit" disabled={!canSubmit} aria-label="Generate image">
                 {isGenerating ? <Loader2 className="spin" size={18} /> : <Send size={18} />}
               </button>

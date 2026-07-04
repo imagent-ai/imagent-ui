@@ -1025,25 +1025,15 @@ textarea:focus-visible {
   transform: translateY(-1px);
 }
 
-.composer-toolbar,
-.composer-input-row {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  min-width: 0;
-}
-
 .composer-toolbar {
-  flex-wrap: wrap;
-  min-height: 34px;
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto 38px;
+  min-height: 38px;
+  min-width: 0;
   position: relative;
   z-index: 3;
-}
-
-.composer-input-row {
-  align-items: flex-end;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 38px;
 }
 
 .generation-composer textarea {
@@ -1071,8 +1061,10 @@ textarea:focus-visible {
   border-radius: 50%;
   color: #fff;
   display: flex;
+  grid-column: 3;
   height: 38px;
   justify-content: center;
+  justify-self: end;
   width: 38px;
 }
 
@@ -1121,6 +1113,32 @@ textarea:focus-visible {
   width: 122px;
 }
 
+.generation-composer .model-dropdown {
+  justify-self: start;
+}
+
+.generation-composer .quality-dropdown {
+  justify-self: end;
+}
+
+.generation-composer .composer-configure-button,
+.generation-composer .model-dropdown-trigger,
+.generation-composer .quality-dropdown-trigger {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  min-height: 32px;
+  padding: 0 6px;
+}
+
+.generation-composer .model-dropdown-trigger {
+  justify-content: flex-start;
+}
+
+.generation-composer .quality-dropdown-trigger {
+  gap: 6px;
+}
+
 .model-dropdown-trigger,
 .quality-dropdown-trigger {
   justify-content: space-between;
@@ -1140,6 +1158,17 @@ textarea:focus-visible {
   background: #fff;
   border-color: rgba(29, 217, 245, 0.42);
   box-shadow: 0 10px 22px rgba(4, 24, 59, 0.07);
+}
+
+.generation-composer .model-dropdown.open .model-dropdown-trigger,
+.generation-composer .quality-dropdown.open .quality-dropdown-trigger,
+.generation-composer .model-dropdown-trigger:hover,
+.generation-composer .quality-dropdown-trigger:hover,
+.generation-composer .composer-configure-button:hover {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--accent-dark);
 }
 
 .dropdown-copy {
@@ -2894,16 +2923,15 @@ textarea:focus-visible {
 
   .composer-toolbar {
     gap: 6px;
+    grid-template-columns: minmax(0, 1fr) 96px 38px;
   }
 
   .model-dropdown {
-    flex: 1 1 180px;
     width: auto;
   }
 
   .quality-dropdown {
-    flex: 0 0 104px;
-    width: 104px;
+    width: 96px;
   }
 
   .dropdown-copy strong {
