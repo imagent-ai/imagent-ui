@@ -429,10 +429,50 @@ textarea:focus-visible {
 }
 
 .generation-shell {
+  background:
+    radial-gradient(circle at 84% 4%, rgba(29, 217, 245, 0.2), transparent 25%),
+    radial-gradient(circle at 14% 8%, rgba(3, 88, 188, 0.09), transparent 24%),
+    linear-gradient(180deg, #f8fcff 0%, #fff 54%);
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   height: calc(100vh - 60px);
+  isolation: isolate;
   overflow: hidden;
+  position: relative;
+}
+
+.generation-shell::before,
+.generation-shell::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.generation-shell::before {
+  background:
+    radial-gradient(circle, rgba(3,88,188,0.18) 0 3px, transparent 4px),
+    linear-gradient(90deg, transparent 0 24px, rgba(3,88,188,0.08) 24px 26px, transparent 26px 78px),
+    linear-gradient(0deg, transparent 0 24px, rgba(3,88,188,0.08) 24px 26px, transparent 26px 78px);
+  background-position: 0 0, 13px 13px, 13px 13px;
+  background-size: 78px 78px;
+  inset: 0;
+  mask-image: linear-gradient(90deg, #000 0%, #000 78%, transparent 100%);
+  opacity: 0.44;
+}
+
+.generation-shell::after {
+  background:
+    radial-gradient(circle at 18px 18px, rgba(29,217,245,0.42) 0 4px, transparent 5px),
+    radial-gradient(circle at 118px 82px, rgba(29,217,245,0.32) 0 4px, transparent 5px),
+    radial-gradient(circle at 210px 22px, rgba(29,217,245,0.3) 0 4px, transparent 5px),
+    linear-gradient(32deg, transparent 0 86px, rgba(3,88,188,0.14) 87px 89px, transparent 90px 240px),
+    linear-gradient(146deg, transparent 0 80px, rgba(3,88,188,0.13) 81px 83px, transparent 84px 240px);
+  height: 190px;
+  opacity: 0.7;
+  right: 8%;
+  top: 76px;
+  width: 250px;
 }
 
 .history-sidebar {
@@ -441,7 +481,8 @@ textarea:focus-visible {
     linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px),
     radial-gradient(circle at top left, rgba(29, 217, 245, 0.34), transparent 34%),
     radial-gradient(circle at 90% 18%, rgba(29, 217, 245, 0.16), transparent 26%),
-    linear-gradient(180deg, var(--deep), #031330);
+    linear-gradient(180deg, rgba(4, 24, 59, 0.9), rgba(3, 19, 48, 0.94));
+  backdrop-filter: blur(12px);
   background-size: 44px 44px, 44px 44px, auto, auto, auto;
   border-right: 1px solid rgba(255,255,255,0.08);
   display: flex;
@@ -450,6 +491,8 @@ textarea:focus-visible {
   min-width: 0;
   overflow: hidden;
   padding: 14px;
+  position: relative;
+  z-index: 1;
 }
 
 .new-chat {
@@ -591,49 +634,13 @@ textarea:focus-visible {
 }
 
 .generation-main {
-  background:
-    radial-gradient(circle at 84% 4%, rgba(29, 217, 245, 0.2), transparent 25%),
-    radial-gradient(circle at 14% 8%, rgba(3, 88, 188, 0.09), transparent 24%),
-    linear-gradient(180deg, #f8fcff 0%, #fff 54%);
+  background: transparent;
   display: grid;
   grid-template-rows: 58px minmax(0, 1fr) auto;
   min-width: 0;
   overflow: hidden;
   position: relative;
-}
-
-.generation-main::before,
-.generation-main::after {
-  content: "";
-  pointer-events: none;
-  position: absolute;
-  z-index: 0;
-}
-
-.generation-main::before {
-  background:
-    radial-gradient(circle, rgba(3,88,188,0.18) 0 3px, transparent 4px),
-    linear-gradient(90deg, transparent 0 24px, rgba(3,88,188,0.08) 24px 26px, transparent 26px 78px),
-    linear-gradient(0deg, transparent 0 24px, rgba(3,88,188,0.08) 24px 26px, transparent 26px 78px);
-  background-position: 0 0, 13px 13px, 13px 13px;
-  background-size: 78px 78px;
-  inset: 0;
-  mask-image: linear-gradient(90deg, transparent 0%, #000 14%, #000 78%, transparent 100%);
-  opacity: 0.44;
-}
-
-.generation-main::after {
-  background:
-    radial-gradient(circle at 18px 18px, rgba(29,217,245,0.42) 0 4px, transparent 5px),
-    radial-gradient(circle at 118px 82px, rgba(29,217,245,0.32) 0 4px, transparent 5px),
-    radial-gradient(circle at 210px 22px, rgba(29,217,245,0.3) 0 4px, transparent 5px),
-    linear-gradient(32deg, transparent 0 86px, rgba(3,88,188,0.14) 87px 89px, transparent 90px 240px),
-    linear-gradient(146deg, transparent 0 80px, rgba(3,88,188,0.13) 81px 83px, transparent 84px 240px);
-  height: 190px;
-  opacity: 0.7;
-  right: 8%;
-  top: 76px;
-  width: 250px;
+  z-index: 1;
 }
 
 .generation-topbar {
@@ -2776,11 +2783,11 @@ textarea:focus-visible {
     overflow-x: hidden;
   }
 
-  .generation-main::after {
+  .generation-shell::after {
     display: none;
   }
 
-  .generation-main::before {
+  .generation-shell::before {
     inset: 0;
     mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
     opacity: 0.38;
