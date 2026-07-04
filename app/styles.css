@@ -1128,6 +1128,7 @@ textarea:focus-visible {
 
 .generation-composer .model-dropdown {
   justify-self: start;
+  text-align: left;
 }
 
 .generation-composer .quality-dropdown {
@@ -1147,6 +1148,24 @@ textarea:focus-visible {
 
 .generation-composer .model-dropdown-trigger {
   justify-content: flex-start;
+  text-align: left;
+}
+
+.generation-composer .model-dropdown-trigger .dropdown-copy {
+  justify-items: start;
+  text-align: left;
+}
+
+.generation-composer .model-dropdown-menu {
+  left: 0;
+  right: auto;
+  transform-origin: left bottom;
+  width: 100%;
+}
+
+.generation-composer .model-dropdown-menu button,
+.generation-composer .model-dropdown-menu button > span {
+  text-align: left;
 }
 
 .generation-composer .quality-dropdown-trigger {
@@ -1162,6 +1181,7 @@ textarea:focus-visible {
 .generation-composer .quality-dropdown-menu {
   left: auto;
   right: 0;
+  transform-origin: right bottom;
 }
 
 .generation-composer .quality-dropdown-menu button {
