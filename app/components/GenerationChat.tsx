@@ -459,23 +459,11 @@ export function GenerationChat() {
         <div className="conversation custom-scrollbar">
           {!activeSession || activeSession.messages.length === 0 ? (
             <section className="generation-empty">
-              <img className="empty-mark" src="/brand/imagent-ai-avatar.jpg" alt="" />
               <span className="empty-kicker">Subnet 74 · image agent · benchmark ready</span>
               <h1>What should Imagent create?</h1>
               <div className="generation-showcase" aria-hidden="true">
                 <div className="showcase-image">
-                  <span className="showcase-sun" />
-                  <span className="showcase-ring ring-one" />
-                  <span className="showcase-ring ring-two" />
-                  <span className="showcase-plate plate-one" />
-                  <span className="showcase-plate plate-two" />
-                  <span className="showcase-plate plate-three" />
-                  <span className="showcase-halo" />
-                  <span className="showcase-core" />
-                  <span className="showcase-node node-one" />
-                  <span className="showcase-node node-two" />
-                  <span className="showcase-node node-three" />
-                  <span className="showcase-scanline" />
+                  <img className="showcase-brand" src="/brand/imagent-ai-avatar.jpg" alt="" />
                 </div>
               </div>
               <div className="prompt-suggestions">
