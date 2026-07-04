@@ -134,6 +134,7 @@ export function GenerationChat() {
   const [verification, setVerification] = useState<VerificationState>(emptyVerification);
   const [verificationCache, setVerificationCache] = useState<VerificationCache | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<"composer-model" | "composer-quality" | "settings-model" | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -261,6 +262,8 @@ export function GenerationChat() {
   const canUseVerifiedModels = draftApiKey.length > 0 && verification.status === "valid" && modelChoices.length > 0;
   const canSaveSettings = !draftApiKey || verification.status === "valid";
   const selectedDraftModel = modelChoices.find((model) => model.id === draftSettings.model);
+  const composerModelChoices = availableModels.length ? availableModels : fallbackModelOptions;
+  const selectedComposerModel = composerModelChoices.find((model) => model.id === settings.model);
   const canSubmit = useMemo(() => prompt.trim().length > 0 && !isGenerating, [prompt, isGenerating]);
   const canCreateNewSession = !activeSession || activeSession.messages.length > 0 || prompt.trim().length > 0;
 
@@ -306,17 +309,30 @@ export function GenerationChat() {
       localStorage.removeItem(VERIFICATION_CACHE_KEY);
     }
     setSettings(nextSettings);
+    setOpenDropdown(null);
     setSettingsOpen(false);
   }
 
   function openSettings() {
     setDraftSettings(settings);
+    setOpenDropdown(null);
     setSettingsOpen(true);
   }
 
   function cancelSettings() {
     setDraftSettings(settings);
+    setOpenDropdown(null);
     setSettingsOpen(false);
+  }
+
+  function updateComposerModel(model: string) {
+    setSettings((current) => ({...current, model}));
+    setOpenDropdown(null);
+  }
+
+  function updateComposerQuality(quality: string) {
+    setSettings((current) => ({...current, quality}));
+    setOpenDropdown(null);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -436,25 +452,9 @@ export function GenerationChat() {
       </aside>
 
       <section className="generation-main">
-        <header className="generation-topbar">
-          {hasConfiguredOpenRouter ? (
-            <button className="model-chip" type="button" onClick={openSettings}>
-              <Sparkles size={16} />
-              <span>{labelForModel(settings.model, availableModels)}</span>
-            </button>
-          ) : (
-            <button className="openrouter-placeholder" type="button" onClick={openSettings}>
-              <KeyRound size={16} />
-              <span>Configure OpenRouter</span>
-            </button>
-          )}
-          <div className="topbar-actions">
-            {hasConfiguredOpenRouter ? <span className="quality-chip">{settings.quality}</span> : null}
-            <button className="icon-button" type="button" onClick={openSettings} aria-label="Settings">
-              <Settings size={18} />
-            </button>
-          </div>
-        </header>
+        <button className="floating-settings-button" type="button" onClick={openSettings} aria-label="Settings">
+          <Settings size={18} />
+        </button>
 
         <div className="conversation custom-scrollbar">
           {!activeSession || activeSession.messages.length === 0 ? (
@@ -522,21 +522,50 @@ export function GenerationChat() {
 
         <div className="generation-composer-wrap">
           <form className="generation-composer" onSubmit={submit}>
-            <textarea
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Message Imagent"
-              rows={1}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                }
-              }}
-            />
-            <button type="submit" disabled={!canSubmit} aria-label="Generate image">
-              {isGenerating ? <Loader2 className="spin" size={18} /> : <Send size={18} />}
-            </button>
+            <div className="composer-toolbar">
+              {hasConfiguredOpenRouter ? (
+                <>
+                  <ModelDropdown
+                    id="composer-model"
+                    label="Model"
+                    models={composerModelChoices}
+                    open={openDropdown === "composer-model"}
+                    selectedModel={settings.model}
+                    selectedModelName={selectedComposerModel?.name || labelForModel(settings.model, composerModelChoices)}
+                    onOpenChange={(open) => setOpenDropdown(open ? "composer-model" : null)}
+                    onSelect={updateComposerModel}
+                  />
+                  <QualityDropdown
+                    open={openDropdown === "composer-quality"}
+                    selectedQuality={settings.quality}
+                    onOpenChange={(open) => setOpenDropdown(open ? "composer-quality" : null)}
+                    onSelect={updateComposerQuality}
+                  />
+                </>
+              ) : (
+                <button className="composer-configure-button" type="button" onClick={openSettings}>
+                  <KeyRound size={15} />
+                  Configure OpenRouter
+                </button>
+              )}
+            </div>
+            <div className="composer-input-row">
+              <textarea
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                placeholder="Message Imagent"
+                rows={1}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
+              />
+              <button className="composer-send-button" type="submit" disabled={!canSubmit} aria-label="Generate image">
+                {isGenerating ? <Loader2 className="spin" size={18} /> : <Send size={18} />}
+              </button>
+            </div>
           </form>
         </div>
       </section>
@@ -582,33 +611,27 @@ export function GenerationChat() {
                 <VerificationBadge verification={verification} />
               </div>
             </label>
-            <label className="settings-field">
+            <div className="settings-field">
               <span>Image model</span>
-              <div className="select-shell">
-                <select
-                  value={canUseVerifiedModels ? draftSettings.model : ""}
-                  onChange={(event) => setDraftSettings({...draftSettings, model: event.target.value})}
-                  disabled={!canUseVerifiedModels}
-                >
-                  {canUseVerifiedModels ? (
-                    modelChoices.map((option) => (
-                      <option value={option.id} key={option.id}>
-                        {option.name}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="">Verify OpenRouter to load image models</option>
-                  )}
-                </select>
-                <ChevronDown size={16} />
-              </div>
+              <ModelDropdown
+                id="settings-model"
+                disabled={!canUseVerifiedModels}
+                emptyLabel="Verify OpenRouter to load image models"
+                label="Image model"
+                models={canUseVerifiedModels ? modelChoices : []}
+                open={openDropdown === "settings-model"}
+                selectedModel={draftSettings.model}
+                selectedModelName={selectedDraftModel?.name || labelForModel(draftSettings.model, modelChoices)}
+                onOpenChange={(open) => setOpenDropdown(open ? "settings-model" : null)}
+                onSelect={(model) => setDraftSettings({...draftSettings, model})}
+              />
               {canUseVerifiedModels ? (
                 <small className="field-note">
                   {selectedDraftModel?.pricing || "pricing unavailable"} · {modelChoices.length} image models loaded.
                 </small>
               ) : null}
-            </label>
-            <label className="settings-field">
+            </div>
+            <div className="settings-field">
               <span>Quality level</span>
               <div className="segmented-control" role="radiogroup" aria-label="Quality level">
                 {qualityOptions.map((quality) => (
@@ -625,7 +648,7 @@ export function GenerationChat() {
                   </button>
                 ))}
               </div>
-            </label>
+            </div>
             <footer>
               <button type="button" className="secondary-button" onClick={cancelSettings}>
                 Cancel
@@ -635,6 +658,159 @@ export function GenerationChat() {
               </button>
             </footer>
           </section>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ModelDropdown({
+  disabled = false,
+  emptyLabel = "No models loaded",
+  id,
+  label,
+  models,
+  onOpenChange,
+  onSelect,
+  open,
+  selectedModel,
+  selectedModelName
+}: {
+  disabled?: boolean;
+  emptyLabel?: string;
+  id: string;
+  label: string;
+  models: OpenRouterModelOption[];
+  onOpenChange: (open: boolean) => void;
+  onSelect: (model: string) => void;
+  open: boolean;
+  selectedModel: string;
+  selectedModelName: string;
+}) {
+  const selected = models.find((model) => model.id === selectedModel);
+  const menuId = `${id}-menu`;
+
+  return (
+    <div
+      className={`model-dropdown ${open ? "open" : ""} ${disabled ? "disabled" : ""}`}
+      onBlur={(event) => {
+        const nextFocus = event.relatedTarget as Node | null;
+        if (!event.currentTarget.contains(nextFocus)) {
+          onOpenChange(false);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          onOpenChange(false);
+        }
+      }}
+    >
+      <button
+        className="model-dropdown-trigger"
+        type="button"
+        disabled={disabled}
+        aria-controls={open ? menuId : undefined}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => onOpenChange(!open)}
+      >
+        <Sparkles size={15} />
+        <span className="dropdown-copy">
+          <small>{label}</small>
+          <strong>{disabled ? emptyLabel : selected?.name || selectedModelName}</strong>
+        </span>
+        <ChevronDown size={15} />
+      </button>
+      {open && !disabled ? (
+        <div className="model-dropdown-menu custom-scrollbar" id={menuId} role="listbox" aria-label={label}>
+          {models.map((model) => {
+            const active = model.id === selectedModel;
+            return (
+              <button
+                className={active ? "active" : ""}
+                type="button"
+                role="option"
+                aria-selected={active}
+                key={model.id}
+                onClick={() => {
+                  onSelect(model.id);
+                  onOpenChange(false);
+                }}
+              >
+                <span>
+                  <strong>{model.name}</strong>
+                  <small>{model.pricing || model.id}</small>
+                </span>
+                {active ? <Check size={15} /> : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function QualityDropdown({
+  onOpenChange,
+  onSelect,
+  open,
+  selectedQuality
+}: {
+  onOpenChange: (open: boolean) => void;
+  onSelect: (quality: string) => void;
+  open: boolean;
+  selectedQuality: string;
+}) {
+  return (
+    <div
+      className={`quality-dropdown ${open ? "open" : ""}`}
+      onBlur={(event) => {
+        const nextFocus = event.relatedTarget as Node | null;
+        if (!event.currentTarget.contains(nextFocus)) {
+          onOpenChange(false);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          onOpenChange(false);
+        }
+      }}
+    >
+      <button
+        className="quality-dropdown-trigger"
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => onOpenChange(!open)}
+      >
+        <span className="dropdown-copy">
+          <small>Level</small>
+          <strong>{selectedQuality}</strong>
+        </span>
+        <ChevronDown size={15} />
+      </button>
+      {open ? (
+        <div className="quality-dropdown-menu" role="listbox" aria-label="Generation level">
+          {qualityOptions.map((quality) => {
+            const active = quality === selectedQuality;
+            return (
+              <button
+                className={active ? "active" : ""}
+                type="button"
+                role="option"
+                aria-selected={active}
+                key={quality}
+                onClick={() => {
+                  onSelect(quality);
+                  onOpenChange(false);
+                }}
+              >
+                <span>{quality}</span>
+                {active ? <Check size={14} /> : null}
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </div>
