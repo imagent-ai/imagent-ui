@@ -12,10 +12,10 @@
     "closed_at": "2026-07-03T09:12:27Z"
   },
   "contributor": {
-    "login": "mason-canvas",
-    "name": "Mason Canvas",
-    "avatar_url": null,
-    "html_url": "https://github.com/mason-canvas"
+    "login": "mitchelltop",
+    "name": "mitchelltop",
+    "avatar_url": "https://github.com/mitchelltop.png?size=96",
+    "html_url": "https://github.com/mitchelltop"
   },
   "benchmark_version": "openrouter-vision-judge-v0.3.0",
   "dataset_version": "image-bench-v2026.07.04",

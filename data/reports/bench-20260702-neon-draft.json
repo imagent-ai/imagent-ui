@@ -12,10 +12,10 @@
     "closed_at": "2026-07-02T20:37:55Z"
   },
   "contributor": {
-    "login": "rhea-diffuse",
-    "name": "Rhea Diffuse",
-    "avatar_url": null,
-    "html_url": "https://github.com/rhea-diffuse"
+    "login": "mitchelltop",
+    "name": "mitchelltop",
+    "avatar_url": "https://github.com/mitchelltop.png?size=96",
+    "html_url": "https://github.com/mitchelltop"
   },
   "benchmark_version": "openrouter-vision-judge-v0.3.0",
   "dataset_version": "image-bench-v2026.07.04",

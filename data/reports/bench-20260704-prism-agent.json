@@ -12,10 +12,10 @@
     "closed_at": null
   },
   "contributor": {
-    "login": "kai-prompt",
-    "name": "Kai Prompt",
-    "avatar_url": null,
-    "html_url": "https://github.com/kai-prompt"
+    "login": "mitchelltop",
+    "name": "mitchelltop",
+    "avatar_url": "https://github.com/mitchelltop.png?size=96",
+    "html_url": "https://github.com/mitchelltop"
   },
   "benchmark_version": "openrouter-vision-judge-v0.3.0",
   "dataset_version": "image-bench-v2026.07.04",
