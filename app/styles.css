@@ -1151,6 +1151,22 @@ textarea:focus-visible {
 
 .generation-composer .quality-dropdown-trigger {
   gap: 5px;
+  justify-content: flex-end;
+}
+
+.generation-composer .quality-dropdown-trigger .dropdown-copy {
+  justify-items: end;
+  text-align: right;
+}
+
+.generation-composer .quality-dropdown-menu {
+  left: auto;
+  right: 0;
+}
+
+.generation-composer .quality-dropdown-menu button {
+  justify-content: flex-end;
+  text-align: right;
 }
 
 .model-dropdown-trigger,
