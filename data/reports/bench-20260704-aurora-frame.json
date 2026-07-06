@@ -140,7 +140,7 @@
       "entrypoint": "imagent.agents.aurora:Agent"
     },
     "agent_config": {
-      "model": "openai/gpt-image-1-mini",
+      "model": "google/gemini-3.1-flash-image",
       "planner": "staged-composition-v2",
       "evaluation": {
         "image_judge": {

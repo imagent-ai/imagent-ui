@@ -1,7 +1,13 @@
 # imagent-ui
 
-Web console for imported `imagent-bench` reports plus a local Imagent generation
-playground.
+Product website for Imagent: home page, OpenRouter-backed generation
+playground, benchmark leaderboard, whitepaper, and imported `imagent-bench`
+reports.
+
+The playground uses OpenRouter with the project-standard image model
+`google/gemini-3.1-flash-image` (Gemini 3.1 Flash Image). The UI intentionally
+shows only that model so contributors compare agent orchestration against a
+fixed underlying image model.
 
 ## Gittensor Relationship
 

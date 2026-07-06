@@ -16,7 +16,6 @@ import { resolvePublicSiteUrl } from "@/lib/site";
 type GenerateRequest = {
   prompt?: string;
   apiKey?: string;
-  model?: string;
   quality?: string;
   background?: string;
 };
@@ -48,8 +47,8 @@ export async function POST(request: Request) {
   const body = (await request.json()) as GenerateRequest;
   const publicSiteUrl = resolvePublicSiteUrl();
   const prompt = String(body.prompt || "").trim();
-  const model = String(body.model || DEFAULT_GENERATION_MODEL).trim();
-  const quality = String(body.quality || "low").trim();
+  const model = DEFAULT_GENERATION_MODEL;
+  const quality = String(body.quality || "auto").trim();
   const background = String(body.background || "auto").trim();
   const runtime = await getResolvedPlaygroundRuntime();
   const apiKey = String(body.apiKey || (runtime.hasServerApiKey ? process.env.OPENROUTER_API_KEY : "") || "").trim();

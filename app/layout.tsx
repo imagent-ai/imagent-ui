@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AppFooter } from "@/app/components/AppFooter";
 import { AppHeader } from "@/app/components/AppHeader";
 import { ScrollActivity } from "@/app/components/ScrollActivity";
+import { SiteBackground } from "@/app/components/SiteBackground";
 import { resolvePublicSiteUrl } from "@/lib/site";
 import "./styles.css";
 
@@ -17,14 +18,14 @@ const publicSiteUrl = resolvePublicSiteUrl();
 
 export const metadata: Metadata = {
   title: "Imagent",
-  description: "Image agent playground and benchmark leaderboard",
+  description: "Open platform for image-generation agents, benchmarks, and Gittensor-powered contributor rounds.",
   metadataBase: new URL(publicSiteUrl),
   alternates: {
     canonical: "/"
   },
   openGraph: {
     title: "Imagent",
-    description: "Image agent playground and benchmark leaderboard",
+    description: "Open platform for image-generation agents, benchmarks, and Gittensor-powered contributor rounds.",
     url: publicSiteUrl,
     siteName: "Imagent"
   },
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="en">
       <body className={jetBrainsMono.variable}>
+        <SiteBackground />
         <ScrollActivity />
         <AppHeader />
         <main>{children}</main>

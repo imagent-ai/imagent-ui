@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { cache } from "react";
 
 export type Artifact = {
   type: string;
@@ -122,6 +123,7 @@ export type LeaderboardEntry = {
     mergeEligible: boolean;
     source: "ranking" | "history" | "none";
   };
+  generationModel: string | null;
   judgeModel: string | null;
   contributor: (Required<Pick<ContributorMetadata, "login">> & Omit<ContributorMetadata, "login">) & {
     source: "report" | "derived";
@@ -131,7 +133,10 @@ export type LeaderboardEntry = {
 
 const reportsDir = path.join(process.cwd(), "data", "reports");
 
-export async function listReports(): Promise<BenchmarkReport[]> {
+// Memoized per server render pass so a single request (or the static build) that
+// touches reports through getReport / listLeaderboardEntries / generateStaticParams
+// reads and validates the report files at most once instead of re-parsing them each call.
+export const listReports = cache(async function listReports(): Promise<BenchmarkReport[]> {
   await fs.mkdir(reportsDir, { recursive: true });
   const names = await fs.readdir(reportsDir);
   const reports = await Promise.all(
@@ -147,7 +152,7 @@ export async function listReports(): Promise<BenchmarkReport[]> {
       }
       return Date.parse(right.completed_at) - Date.parse(left.completed_at);
     });
-}
+});
 
 export async function getReport(runId: string): Promise<BenchmarkReport | null> {
   const reports = await listReports();
@@ -178,6 +183,7 @@ export function toLeaderboardEntry(report: BenchmarkReport, rank = 1): Leaderboa
     completedAt: report.completed_at,
     dimensions: normalizeDimensions(report),
     improvement,
+    generationModel: normalizeGenerationModel(report),
     judgeModel: normalizeJudgeModel(report),
     contributor,
     pullRequest
@@ -606,6 +612,30 @@ function normalizeJudgeModel(report: BenchmarkReport) {
   }
 
   return null;
+}
+
+function normalizeGenerationModel(report: BenchmarkReport) {
+  const agentConfig = report.configuration.agent_config;
+  if (!isRecord(agentConfig)) {
+    return null;
+  }
+
+  const directModel = stringFromRecord(agentConfig, "model");
+  if (directModel) {
+    return directModel;
+  }
+
+  const nestedAgent = agentConfig.agent;
+  if (!isRecord(nestedAgent)) {
+    return null;
+  }
+
+  const imageBackend = nestedAgent.image_backend;
+  if (!isRecord(imageBackend)) {
+    return null;
+  }
+
+  return stringFromRecord(imageBackend, "model") ?? stringFromRecord(imageBackend, "provider");
 }
 
 function finiteNumber(value: unknown) {

@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, ImageIcon, RadioTower } from "lucide-react";
+import { BarChart3, BookOpenText, Home, ImageIcon, RadioTower } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Route } from "next";
 
 const navItems: Array<{ href: Route; label: string; icon: LucideIcon }> = [
+  { href: "/", label: "Home", icon: Home },
   { href: "/generation", label: "Generation", icon: ImageIcon },
-  { href: "/leaderboard", label: "Leaderboard", icon: BarChart3 }
+  { href: "/leaderboard", label: "Leaderboard", icon: BarChart3 },
+  { href: "/whitepaper", label: "Whitepaper", icon: BookOpenText }
 ];
 
 export function AppHeader() {
@@ -16,7 +18,7 @@ export function AppHeader() {
 
   return (
     <header className="app-header">
-      <Link className="app-brand" href="/generation">
+      <Link className="app-brand" href="/">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/imagent-ai-avatar.jpg" alt="" />
         <strong>IMAGENT</strong>
