@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const RUN_MANIFEST_FILE = "result.json";
 
-export const DEFAULT_GENERATION_MODEL = "openai/gpt-image-1-mini";
+export { IMAGENT_GENERATION_MODEL_ID as DEFAULT_GENERATION_MODEL } from "./models";
 
 export type PlaygroundRuntimeStatus = {
   ready: boolean;

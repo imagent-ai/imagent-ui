@@ -6,6 +6,7 @@ import {
   Check,
   ChevronDown,
   Download,
+  FileJson,
   KeyRound,
   Loader2,
   MessageSquarePlus,
@@ -17,6 +18,10 @@ import {
   UserRound,
   X
 } from "lucide-react";
+import {
+  IMAGENT_GENERATION_MODEL_ID,
+  IMAGENT_GENERATION_MODEL_OPTION
+} from "@/lib/models";
 
 type ChatMessage = {
   id: string;
@@ -24,6 +29,7 @@ type ChatMessage = {
   content: string;
   imageUrl?: string;
   imageFileName?: string;
+  traceUrl?: string;
   provider?: string;
   agentId?: string;
   capability?: string;
@@ -117,8 +123,8 @@ const LEGACY_VERIFICATION_CACHE_KEY = "imagent.openrouterVerification";
 
 const defaultSettings: PlaygroundSettings = {
   apiKey: "",
-  model: "openai/gpt-image-1-mini",
-  quality: "low"
+  model: IMAGENT_GENERATION_MODEL_ID,
+  quality: "auto"
 };
 
 const defaultSavedSettings: SavedPlaygroundSettings = {
@@ -128,20 +134,12 @@ const defaultSavedSettings: SavedPlaygroundSettings = {
 
 const fallbackModelOptions: OpenRouterModelOption[] = [
   {
-    id: "openai/gpt-image-1-mini",
-    name: "OpenAI GPT Image 1 Mini",
-    description: "Default OpenRouter image model",
-    pricing: "pricing loads after verification"
-  },
-  {
-    id: "black-forest-labs/flux.2-klein-4b",
-    name: "Black Forest Labs FLUX 2 Klein",
-    description: "Fallback image model",
+    ...IMAGENT_GENERATION_MODEL_OPTION,
     pricing: "pricing loads after verification"
   }
 ];
 
-const qualityOptions = ["low", "medium", "high", "auto"];
+const qualityOptions = ["auto", "low", "medium", "high"];
 
 const emptyVerification: VerificationState = {
   status: "idle",
@@ -188,7 +186,7 @@ export function GenerationChat() {
     const savedSettings = readJson<Partial<SavedPlaygroundSettings>>(SETTINGS_KEY, defaultSavedSettings);
     const initialSettings = {
       ...defaultSettings,
-      model: typeof savedSettings.model === "string" && savedSettings.model.trim() ? savedSettings.model : defaultSettings.model,
+      model: defaultSettings.model,
       quality: isQualityOption(savedSettings.quality) ? savedSettings.quality : defaultSettings.quality
     };
     const initialSessions = savedSessions.length ? savedSessions : [newSession()];
@@ -261,7 +259,7 @@ export function GenerationChat() {
           throw new Error(data.error || `Verification failed with HTTP ${response.status}`);
         }
 
-        const models = data.models?.length ? data.models : fallbackModelOptions;
+        const models = fixedModelOptions(data.models);
         const message = data.warning || (data.usingServerKey ? "Verified with the server key" : "Verified");
         const nextCache = {
           cacheKey,
@@ -281,10 +279,7 @@ export function GenerationChat() {
           if ((apiKey && currentApiKey !== apiKey) || (!apiKey && currentApiKey)) {
             return current;
           }
-          if (models.some((model) => model.id === current.model)) {
-            return current;
-          }
-          return { ...current, model: models[0].id };
+          return { ...current, model: IMAGENT_GENERATION_MODEL_ID };
         });
       } catch (error) {
         if (controller.signal.aborted) {
@@ -348,13 +343,9 @@ export function GenerationChat() {
   }
 
   function saveSettings() {
-    const selectableModels = availableModels.length ? availableModels : fallbackModelOptions;
-    const selectedModel = selectableModels.some((model) => model.id === draftSettings.model)
-      ? draftSettings.model
-      : selectableModels[0]?.id || defaultSettings.model;
     const nextSettings = {
       apiKey: draftSettings.apiKey.trim(),
-      model: selectedModel,
+      model: IMAGENT_GENERATION_MODEL_ID,
       quality: draftSettings.quality
     };
     if (!nextSettings.apiKey && !hasServerApiKey) {
@@ -380,7 +371,7 @@ export function GenerationChat() {
   }
 
   function updateComposerModel(model: string) {
-    setSettings((current) => ({...current, model}));
+    setSettings((current) => ({...current, model: model === IMAGENT_GENERATION_MODEL_ID ? model : IMAGENT_GENERATION_MODEL_ID}));
     setOpenDropdown(null);
   }
 
@@ -417,7 +408,6 @@ export function GenerationChat() {
         body: JSON.stringify({
           prompt: userPrompt,
           apiKey: settings.apiKey.trim() || undefined,
-          model: settings.model,
           quality: settings.quality
         })
       });
@@ -432,6 +422,7 @@ export function GenerationChat() {
           content: "Generated with Imagent",
           imageUrl: data.imageUrl,
           imageFileName: data.imageFileName,
+          traceUrl: data.traceUrl,
           provider: data.provider,
           agentId: data.agentId,
           capability: data.capability,
@@ -605,6 +596,12 @@ export function GenerationChat() {
                         ) : null}
                         {typeof message.latencyMs === "number" ? <span>{message.latencyMs.toFixed(0)} ms</span> : null}
                         {typeof message.costUsd === "number" ? <span>${message.costUsd.toFixed(6)}</span> : null}
+                        {message.traceUrl ? (
+                          <a className="turn-trace-link" href={message.traceUrl} target="_blank" rel="noreferrer">
+                            <FileJson size={12} />
+                            View trace
+                          </a>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -745,11 +742,11 @@ export function GenerationChat() {
                 selectedModel={draftSettings.model}
                 selectedModelName={selectedDraftModel?.name || labelForModel(draftSettings.model, modelChoices)}
                 onOpenChange={(open) => setOpenDropdown(open ? "settings-model" : null)}
-                onSelect={(model) => setDraftSettings({...draftSettings, model})}
+                onSelect={() => setDraftSettings({...draftSettings, model: IMAGENT_GENERATION_MODEL_ID})}
               />
               {canUseVerifiedModels ? (
                 <small className="field-note">
-                  {selectedDraftModel?.pricing || "pricing unavailable"} · {modelChoices.length} image models loaded.
+                  {selectedDraftModel?.pricing || "pricing unavailable"} · fixed project model.
                 </small>
               ) : null}
             </div>
@@ -993,9 +990,20 @@ function titleFromPrompt(prompt: string) {
 function labelForModel(model: string, models: OpenRouterModelOption[]) {
   const knownModel = models.find((option) => option.id === model);
   if (knownModel) {
-    return knownModel.name.replace("OpenAI ", "").replace("Black Forest Labs ", "");
+    return knownModel.name.replace("Google ", "");
   }
   return model.length > 30 ? `${model.slice(0, 30)}...` : model;
+}
+
+function fixedModelOptions(models?: OpenRouterModelOption[]) {
+  const discovered = models?.find((option) => option.id === IMAGENT_GENERATION_MODEL_ID);
+  return [
+    {
+      ...fallbackModelOptions[0],
+      ...(discovered || {}),
+      id: IMAGENT_GENERATION_MODEL_ID
+    }
+  ];
 }
 
 function isUsableVerificationCache(cache: VerificationCache | null, cacheKey: string): cache is VerificationCache {

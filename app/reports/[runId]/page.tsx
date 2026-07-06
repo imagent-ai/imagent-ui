@@ -64,6 +64,7 @@ export default async function ReportPage({ params }: PageProps) {
         <Metric label="Cost" value={`$${entry.costUsd.toFixed(6)}`} />
         <Metric label="Cases" value={String(report.metrics.case_count)} />
         <Metric label="Benchmark" value={report.benchmark_version} />
+        <Metric label="Image model" value={entry.generationModel || "unknown"} />
         <Metric label="Commit" value={shortSha(report.commit_sha)} />
       </div>
 

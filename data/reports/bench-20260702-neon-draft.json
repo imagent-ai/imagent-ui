@@ -141,7 +141,7 @@
       "entrypoint": "imagent.agents.neon_draft:Agent"
     },
     "agent_config": {
-      "model": "black-forest-labs/flux.2-klein-4b",
+      "model": "google/gemini-3.1-flash-image",
       "planner": "low-cost-draft-v1",
       "evaluation": {
         "image_judge": {

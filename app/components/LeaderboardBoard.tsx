@@ -57,6 +57,7 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
         entry.pullRequest.number === null ? "" : String(entry.pullRequest.number),
         entry.benchmarkVersion,
         entry.improvement.label,
+        entry.generationModel,
         entry.judgeModel,
         entry.runId
       ]
@@ -109,6 +110,7 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
               <th>Pull Request</th>
               <th>Score</th>
               <th>Improvement</th>
+              <th>Generation Model</th>
               <th>Result</th>
               <th>Latency</th>
               <th>Cost</th>
@@ -174,6 +176,12 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
                   </div>
                 </td>
                 <td>
+                  <div className="model-cell">
+                    <strong>{formatModelName(entry.generationModel)}</strong>
+                    <small>{entry.generationModel || "model unavailable"}</small>
+                  </div>
+                </td>
+                <td>
                   <span className={`result-badge ${entry.status}`}>
                     {entry.status === "pass" ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
                     {entry.status}
@@ -191,7 +199,7 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
             ))}
             {visibleEntries.length === 0 ? (
               <tr>
-                <td className="empty-table-cell" colSpan={9}>No benchmark reports match this view.</td>
+                <td className="empty-table-cell" colSpan={10}>No benchmark reports match this view.</td>
               </tr>
             ) : null}
           </tbody>
@@ -229,4 +237,14 @@ function formatDimension(value: string) {
   return value
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatModelName(value: string | null) {
+  if (!value) {
+    return "Unknown";
+  }
+  if (value === "google/gemini-3.1-flash-image") {
+    return "Gemini 3.1 Flash Image";
+  }
+  return value.split("/").pop()?.replace(/[-_]+/g, " ") || value;
 }

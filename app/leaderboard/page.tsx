@@ -1,7 +1,22 @@
 import { Activity, BarChart3, Crown, ImageIcon, Medal, ShieldCheck, Timer, TrendingUp, WalletCards } from "lucide-react";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { LeaderboardBoard } from "@/app/components/LeaderboardBoard";
+import { IMAGENT_GENERATION_MODEL_NAME } from "@/lib/models";
 import { type LeaderboardEntry, listLeaderboardEntries } from "@/lib/reports";
+
+export const metadata: Metadata = {
+  title: "Leaderboard | Imagent",
+  description: "Live Imagent benchmark leaderboard for Gittensor-powered image-agent PR rounds.",
+  alternates: {
+    canonical: "/leaderboard"
+  },
+  openGraph: {
+    title: "Leaderboard | Imagent",
+    description: "Live Imagent benchmark leaderboard for Gittensor-powered image-agent PR rounds.",
+    url: "/leaderboard"
+  }
+};
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +55,10 @@ export default async function LeaderboardPage() {
         <div className="leaderboard-hero-copy">
           <span className="page-kicker">Powered by Gittensor · subnet 74 · official eval</span>
           <h1>Image miners compete on live benchmark improvement.</h1>
-          <p>Every report is ranked by score, PR outcome, baseline delta, latency, cost, and judge dimensions.</p>
+          <p>
+            Every report is ranked by score, PR outcome, baseline delta, latency, cost, and judge dimensions.
+            {" "}Generation is fixed to {IMAGENT_GENERATION_MODEL_NAME} through OpenRouter.
+          </p>
         </div>
         <div className="leaderboard-visual" aria-hidden="true">
           <div className="visual-topline">

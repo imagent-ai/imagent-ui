@@ -140,7 +140,7 @@
       "entrypoint": "imagent.agents.prism:Agent"
     },
     "agent_config": {
-      "model": "google/gemini-2.5-flash-image-preview",
+      "model": "google/gemini-3.1-flash-image",
       "planner": "subject-isolation-v1",
       "evaluation": {
         "image_judge": {

@@ -6,8 +6,10 @@ import { RadioTower } from "lucide-react";
 import type { Route } from "next";
 
 const footerLinks: Array<{ href: Route; label: string }> = [
+  { href: "/", label: "Home" },
   { href: "/generation", label: "Generation" },
-  { href: "/leaderboard", label: "Leaderboard" }
+  { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/whitepaper", label: "Whitepaper" }
 ];
 
 export function AppFooter() {
@@ -21,7 +23,7 @@ export function AppFooter() {
     <footer className="app-footer">
       <div className="footer-inner">
         <div className="footer-brand-panel">
-          <Link className="footer-brand" href="/generation">
+          <Link className="footer-brand" href="/">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/imagent-ai-avatar.jpg" alt="" />
             <strong>IMAGENT</strong>

@@ -8,16 +8,6 @@ dlcourse.gleeze.com {
 	reverse_proxy 127.0.0.1:8080
 }
 
-http://imagent.flashhub.net {
-	header Cache-Control "no-store"
-	respond "Gone" 410
-}
-
-https://imagent.flashhub.net {
-	header Cache-Control "no-store"
-	respond "Gone" 410
-}
-
 http://tryimagent.com {
 	redir https://tryimagent.com{uri} permanent
 }

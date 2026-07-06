@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { resolvePlaygroundEnvironment } from "@/lib/playground";
+import {
+  IMAGENT_GENERATION_MODEL_ID,
+  IMAGENT_GENERATION_MODEL_OPTION
+} from "@/lib/models";
 import { resolvePublicSiteUrl } from "@/lib/site";
 
 type VerifyRequest = {
@@ -28,7 +32,7 @@ type OpenRouterModel = {
     output_modalities?: string[];
     modality?: string;
   };
-  pricing?: Record<string, string | number | null | undefined>;
+  pricing?: Record<string, string | number | null | undefined> | Array<Record<string, string | number | null | undefined>>;
 };
 
 type OpenRouterModelsResponse = {
@@ -40,7 +44,7 @@ type OpenRouterModelsResponse = {
 };
 
 const OPENROUTER_KEY_URL = "https://openrouter.ai/api/v1/key";
-const OPENROUTER_IMAGE_MODELS_URL = "https://openrouter.ai/api/v1/models?output_modalities=image&sort=pricing-low-to-high";
+const OPENROUTER_IMAGE_MODELS_URL = "https://openrouter.ai/api/v1/images/models";
 
 export async function POST(request: Request) {
   const body = await parseJson<VerifyRequest>(request);
@@ -90,7 +94,7 @@ export async function POST(request: Request) {
       {
         verified: true,
         key: keyPayload.data || null,
-        models: [],
+        models: [fixedModelOption()],
         usingServerKey,
         warning: modelsPayload.error?.message || `OpenRouter model discovery failed with HTTP ${modelsResponse.status}`
       },
@@ -98,15 +102,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const models = (modelsPayload.data || [])
-    .map((model) => ({
-      id: String(model.id || ""),
-      name: String(model.name || model.id || ""),
-      description: String(model.description || ""),
-      pricing: pricingLabel(model.pricing || {})
-    }))
-    .filter((model) => model.id)
-    .sort((left, right) => left.name.localeCompare(right.name));
+  const fixedModel = (modelsPayload.data || []).find((model) => model.id === IMAGENT_GENERATION_MODEL_ID);
+  const models = [fixedModelOption(fixedModel)];
 
   return NextResponse.json({
     verified: true,
@@ -114,6 +111,15 @@ export async function POST(request: Request) {
     models,
     usingServerKey
   });
+}
+
+function fixedModelOption(model?: OpenRouterModel) {
+  return {
+    id: IMAGENT_GENERATION_MODEL_ID,
+    name: String(model?.name || IMAGENT_GENERATION_MODEL_OPTION.name),
+    description: String(model?.description || IMAGENT_GENERATION_MODEL_OPTION.description),
+    pricing: pricingLabel(model?.pricing) || IMAGENT_GENERATION_MODEL_OPTION.pricing
+  };
 }
 
 async function parseJson<T>(response: Request | Response): Promise<T> {
@@ -124,7 +130,10 @@ async function parseJson<T>(response: Request | Response): Promise<T> {
   }
 }
 
-function pricingLabel(pricing: Record<string, string | number | null | undefined>) {
+function pricingLabel(pricing: OpenRouterModel["pricing"]) {
+  if (!pricing || Array.isArray(pricing)) {
+    return "OpenRouter pricing";
+  }
   const orderedKeys = ["image", "request", "prompt", "completion"];
   const parts = orderedKeys
     .map((key) => {

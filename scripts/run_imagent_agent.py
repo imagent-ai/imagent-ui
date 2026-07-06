@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_PUBLIC_SITE_URL = "https://tryimagent.com"
+DEFAULT_IMAGE_MODEL = "google/gemini-3.1-flash-image"
 
 
 def main() -> int:
@@ -29,7 +30,7 @@ def main() -> int:
     if str(repository_path) not in sys.path:
         sys.path.insert(0, str(repository_path))
 
-    from agent import ImageAgent
+    from agent.agent import ImageAgent
 
     output_dir = Path(str(payload.get("output_dir", ""))).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -38,10 +39,13 @@ def main() -> int:
     run_id = _safe_run_id(str(payload.get("run_id") or f"ui-{uuid.uuid4().hex[:12]}"))
     seed = int(payload.get("seed", 1001))
     background = str(payload.get("background", "auto")).strip()
+    quality = str(payload.get("quality", "auto")).strip()
     public_site_url = _public_site_url(payload)
     image_parameters: dict[str, Any] = {}
     if background and background != "auto":
         image_parameters["background"] = background
+    if quality and quality != "auto":
+        image_parameters["quality"] = quality
 
     config = {
         "runtime": {
@@ -54,8 +58,9 @@ def main() -> int:
                 "provider": "openrouter",
                 "api_key_env": "OPENROUTER_API_KEY",
                 "endpoint": "https://openrouter.ai/api/v1/images",
-                "model": str(payload.get("model", "openai/gpt-image-1-mini")),
-                "quality": str(payload.get("quality", "low")),
+                "model": DEFAULT_IMAGE_MODEL,
+                "resolution": "1K",
+                "aspect_ratio": "1:1",
                 "output_format": "png",
                 "send_seed": False,
                 "send_output_format": False,
