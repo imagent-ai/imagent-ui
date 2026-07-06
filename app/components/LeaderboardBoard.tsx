@@ -54,7 +54,7 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
         entry.repository,
         entry.agentName,
         entry.pullRequest.title,
-        String(entry.pullRequest.number),
+        entry.pullRequest.number === null ? "" : String(entry.pullRequest.number),
         entry.benchmarkVersion,
         entry.improvement.label,
         entry.judgeModel,
@@ -131,12 +131,19 @@ export function LeaderboardBoard({ entries }: { entries: LeaderboardEntry[] }) {
                 </td>
                 <td>
                   <div className="pr-cell">
-                    <strong>#{entry.pullRequest.number}</strong>
+                    <strong>{entry.pullRequest.number === null ? "No PR metadata" : `#${entry.pullRequest.number}`}</strong>
                     <small>{entry.pullRequest.title}</small>
                     <span className={`pr-state ${entry.pullRequest.state}`}>
-                      {entry.pullRequest.state === "merged" ? <GitMerge size={13} /> : <GitPullRequestClosed size={13} />}
+                      {entry.pullRequest.state === "merged" ? (
+                        <GitMerge size={13} />
+                      ) : entry.pullRequest.state === "unknown" ? (
+                        <Minus size={13} />
+                      ) : (
+                        <GitPullRequestClosed size={13} />
+                      )}
                       {entry.pullRequest.state}
                     </span>
+                    {entry.pullRequest.source === "derived" ? <small>metadata derived locally</small> : null}
                   </div>
                 </td>
                 <td>

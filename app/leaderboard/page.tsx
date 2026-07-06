@@ -18,10 +18,9 @@ export default async function LeaderboardPage() {
   const totalCost = entries.reduce((total, entry) => total + entry.costUsd, 0);
   const leader = entries[0];
   const chronological = [...entries].sort((left, right) => Date.parse(left.completedAt) - Date.parse(right.completedAt));
-  const firstReport = chronological[0] ?? null;
   const latestReport = chronological[chronological.length - 1] ?? null;
-  const projectBaseline = leader?.improvement.baselineScore ?? firstReport?.score ?? null;
-  const projectDelta = projectBaseline === null ? null : topScore - projectBaseline;
+  const projectBaseline = leader?.improvement.baselineScore ?? null;
+  const projectDelta = leader?.improvement.delta ?? null;
   const eligible = entries.filter((entry) => entry.improvement.mergeEligible).length;
   const bestImprovement = entries.reduce<LeaderboardEntry | null>((best, entry) => {
     if (entry.improvement.delta === null) {
@@ -81,7 +80,7 @@ export default async function LeaderboardPage() {
           <span className="live-chip"><Activity size={13} /> Live benchmark feed</span>
           <h2>{formatDelta(projectDelta)} project improvement</h2>
           <p>
-            Compared against {projectBaseline === null ? "the active baseline once it is available" : `baseline ${projectBaseline.toFixed(2)}`}.
+            Compared against {projectBaseline === null ? "the recorded baseline once benchmark ranking metadata is available" : `baseline ${projectBaseline.toFixed(2)}`}.
             {" "}Latest report {latestReport ? `finished ${formatDate(latestReport.completedAt)}` : "has not been imported yet"}.
           </p>
         </div>
@@ -94,7 +93,7 @@ export default async function LeaderboardPage() {
           <ProjectMetric
             label="Best PR uplift"
             value={bestImprovement ? formatDelta(bestImprovement.improvement.delta) : "N/A"}
-            detail={bestImprovement ? `@${bestImprovement.contributor.login} · PR #${bestImprovement.pullRequest.number}` : "baseline unavailable"}
+            detail={bestImprovement ? `@${bestImprovement.contributor.login} · ${pullRequestLabel(bestImprovement)}` : "baseline unavailable"}
           />
           <ProjectMetric
             label="Merged proof"
@@ -137,7 +136,7 @@ export default async function LeaderboardPage() {
               <p>@{entry.contributor.login}</p>
             </div>
             <strong>{entry.score.toFixed(2)}</strong>
-            <span>{entry.pullRequest.state} · PR #{entry.pullRequest.number}</span>
+            <span>{entry.pullRequest.state} · {pullRequestLabel(entry)}</span>
             <small>{formatDelta(entry.improvement.delta)} · {entry.improvement.label}</small>
           </a>
         ))}
@@ -198,7 +197,9 @@ function FeatureComparisonPanel({
           <p>
             {baseline
               ? `Comparing @${current?.contributor.login ?? "frontier"} against @${baseline.contributor.login}.`
-              : "Baseline feature scores will connect as benchmark reports include judge dimensions."}
+              : current?.improvement.baselineScore !== null
+                ? "The baseline score is known, but the matching baseline report has not been imported for feature-level comparison."
+                : "Baseline feature scores will connect once benchmark reports include ranking metadata."}
           </p>
         </div>
         <div className="feature-summary-grid">
@@ -262,6 +263,10 @@ function ProjectMetric({ detail, label, value }: { detail: string; label: string
   );
 }
 
+function pullRequestLabel(entry: LeaderboardEntry) {
+  return entry.pullRequest.number === null ? "report metadata" : `PR #${entry.pullRequest.number}`;
+}
+
 function buildFeatureComparison(current: LeaderboardEntry | null, entries: LeaderboardEntry[]) {
   if (!current) {
     return { baseline: null, rows: [] as FeatureComparisonRow[] };
@@ -296,27 +301,16 @@ function buildFeatureComparison(current: LeaderboardEntry | null, entries: Leade
 function findBaselineEntry(current: LeaderboardEntry, entries: LeaderboardEntry[]) {
   const candidates = entries.filter((entry) => entry.runId !== current.runId);
   const baselineCommit = current.improvement.baselineCommit;
-
-  if (baselineCommit) {
-    const commitMatch = candidates.find((entry) => commitMatches(entry.commitSha, baselineCommit));
-    if (commitMatch) {
-      return commitMatch;
-    }
+  if (!baselineCommit) {
+    return null;
   }
 
-  const baselineScore = current.improvement.baselineScore;
-  const previousEntries = candidates
-    .filter((entry) => isBeforeOrSame(entry.completedAt, current.completedAt))
-    .sort((left, right) => Date.parse(right.completedAt) - Date.parse(left.completedAt));
-
-  if (baselineScore !== null) {
-    const scoreMatch = previousEntries.find((entry) => Math.abs(entry.score - baselineScore) < 0.005);
-    if (scoreMatch) {
-      return scoreMatch;
-    }
+  const commitMatch = candidates.find((entry) => commitMatches(entry.commitSha, baselineCommit));
+  if (commitMatch) {
+    return commitMatch;
   }
 
-  return previousEntries[0] ?? candidates[0] ?? null;
+  return null;
 }
 
 function dimensionMap(entry: LeaderboardEntry) {
@@ -325,15 +319,6 @@ function dimensionMap(entry: LeaderboardEntry) {
 
 function commitMatches(commitSha: string, baselineCommit: string) {
   return commitSha === baselineCommit || commitSha.startsWith(baselineCommit) || baselineCommit.startsWith(commitSha);
-}
-
-function isBeforeOrSame(value: string, reference: string) {
-  const timestamp = Date.parse(value);
-  const referenceTimestamp = Date.parse(reference);
-  if (!Number.isFinite(timestamp) || !Number.isFinite(referenceTimestamp)) {
-    return true;
-  }
-  return timestamp <= referenceTimestamp;
 }
 
 function averageDelta(rows: FeatureComparisonRow[]) {
