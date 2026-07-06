@@ -23,6 +23,13 @@ type ChatMessage = {
   role: "user" | "agent";
   content: string;
   imageUrl?: string;
+  imageFileName?: string;
+  provider?: string;
+  agentId?: string;
+  capability?: string;
+  candidateCount?: number;
+  roundCount?: number;
+  selectedCandidateIndex?: number;
   model?: string;
   quality?: string;
   costUsd?: number;
@@ -44,6 +51,8 @@ type PlaygroundSettings = {
   quality: string;
 };
 
+type SavedPlaygroundSettings = Omit<PlaygroundSettings, "apiKey">;
+
 type OpenRouterModelOption = {
   id: string;
   name: string;
@@ -60,14 +69,29 @@ type VerificationState = {
 };
 
 type VerificationCache = {
-  apiKey: string;
+  cacheKey: string;
   message: string;
   models: OpenRouterModelOption[];
   verifiedAt: string;
 };
 
+type RuntimeStatusResponse = {
+  ready: boolean;
+  hasServerApiKey: boolean;
+  issues: string[];
+};
+
 type GenerateResponse = {
+  runId?: string;
   imageUrl?: string;
+  imageFileName?: string;
+  provider?: string;
+  agentId?: string;
+  capability?: string;
+  candidateCount?: number;
+  roundCount?: number;
+  selectedCandidateIndex?: number;
+  traceUrl?: string;
   model?: string;
   costUsd?: number;
   latencyMs?: number;
@@ -81,6 +105,7 @@ type VerifyResponse = {
     limit_remaining?: number | null;
   } | null;
   models?: OpenRouterModelOption[];
+  usingServerKey?: boolean;
   warning?: string;
   error?: string;
 };
@@ -88,12 +113,17 @@ type VerifyResponse = {
 const SESSIONS_KEY = "imagent.chatSessions";
 const ACTIVE_SESSION_KEY = "imagent.activeSession";
 const SETTINGS_KEY = "imagent.settings";
-const VERIFICATION_CACHE_KEY = "imagent.openrouterVerification";
+const LEGACY_VERIFICATION_CACHE_KEY = "imagent.openrouterVerification";
 
 const defaultSettings: PlaygroundSettings = {
   apiKey: "",
   model: "openai/gpt-image-1-mini",
   quality: "low"
+};
+
+const defaultSavedSettings: SavedPlaygroundSettings = {
+  model: defaultSettings.model,
+  quality: defaultSettings.quality
 };
 
 const fallbackModelOptions: OpenRouterModelOption[] = [
@@ -134,34 +164,44 @@ export function GenerationChat() {
   const [availableModels, setAvailableModels] = useState<OpenRouterModelOption[]>(fallbackModelOptions);
   const [verification, setVerification] = useState<VerificationState>(emptyVerification);
   const [verificationCache, setVerificationCache] = useState<VerificationCache | null>(null);
+  const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatusResponse | null>(null);
+  const [runtimeError, setRuntimeError] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<"composer-model" | "composer-quality" | "settings-model" | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
+  async function loadRuntimeStatus() {
+    try {
+      const response = await fetch("/api/playground/status", { cache: "no-store" });
+      const data = (await response.json()) as RuntimeStatusResponse;
+      setRuntimeStatus(data);
+      setRuntimeError("");
+    } catch (error) {
+      setRuntimeStatus(null);
+      setRuntimeError(error instanceof Error ? error.message : "Failed to check the Imagent runtime.");
+    }
+  }
+
   useEffect(() => {
-    const savedSessions = readJson<ChatSession[]>(SESSIONS_KEY, []);
-    const savedSettings = readJson<PlaygroundSettings>(SETTINGS_KEY, defaultSettings);
-    const savedVerificationCache = readJson<VerificationCache | null>(VERIFICATION_CACHE_KEY, null);
-    const initialSettings = {...defaultSettings, ...savedSettings};
+    const savedSessions = sanitizeSessions(readJson<ChatSession[]>(SESSIONS_KEY, []));
+    const savedSettings = readJson<Partial<SavedPlaygroundSettings>>(SETTINGS_KEY, defaultSavedSettings);
+    const initialSettings = {
+      ...defaultSettings,
+      model: typeof savedSettings.model === "string" && savedSettings.model.trim() ? savedSettings.model : defaultSettings.model,
+      quality: isQualityOption(savedSettings.quality) ? savedSettings.quality : defaultSettings.quality
+    };
     const initialSessions = savedSessions.length ? savedSessions : [newSession()];
     const savedActive = localStorage.getItem(ACTIVE_SESSION_KEY);
     const activeId = savedActive && initialSessions.some((session) => session.id === savedActive)
       ? savedActive
       : initialSessions[0].id;
+    localStorage.removeItem(LEGACY_VERIFICATION_CACHE_KEY);
     setSessions(initialSessions);
     setActiveSessionId(activeId);
     setSettings(initialSettings);
     setDraftSettings(initialSettings);
-    if (isUsableVerificationCache(savedVerificationCache, initialSettings.apiKey)) {
-      setVerificationCache(savedVerificationCache);
-      setAvailableModels(savedVerificationCache.models);
-      setVerification({
-        status: "valid",
-        message: savedVerificationCache.message || "Verified",
-        models: savedVerificationCache.models
-      });
-    }
+    void loadRuntimeStatus();
   }, []);
 
   useEffect(() => {
@@ -177,8 +217,12 @@ export function GenerationChat() {
   }, [activeSessionId]);
 
   useEffect(() => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  }, [settings]);
+    const persistedSettings: SavedPlaygroundSettings = {
+      model: settings.model,
+      quality: settings.quality
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(persistedSettings));
+  }, [settings.model, settings.quality]);
 
   useEffect(() => {
     if (!settingsOpen) {
@@ -186,12 +230,13 @@ export function GenerationChat() {
     }
 
     const apiKey = draftSettings.apiKey.trim();
-    if (!apiKey) {
+    const cacheKey = apiKey ? `browser:${apiKey}` : runtimeStatus?.hasServerApiKey ? "server" : "";
+    if (!cacheKey) {
       setVerification(emptyVerification);
       return;
     }
 
-    if (isUsableVerificationCache(verificationCache, apiKey)) {
+    if (isUsableVerificationCache(verificationCache, cacheKey)) {
       setAvailableModels(verificationCache.models);
       setVerification({
         status: "valid",
@@ -208,7 +253,7 @@ export function GenerationChat() {
         const response = await fetch("/api/openrouter/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ apiKey }),
+          body: JSON.stringify(apiKey ? { apiKey } : {}),
           signal: controller.signal
         });
         const data = (await response.json()) as VerifyResponse;
@@ -217,23 +262,26 @@ export function GenerationChat() {
         }
 
         const models = data.models?.length ? data.models : fallbackModelOptions;
-        const message = data.warning || "Verified";
+        const message = data.warning || (data.usingServerKey ? "Verified with the server key" : "Verified");
         const nextCache = {
-          apiKey,
+          cacheKey,
           message,
           models,
           verifiedAt: new Date().toISOString()
         };
         setAvailableModels(models);
         setVerificationCache(nextCache);
-        localStorage.setItem(VERIFICATION_CACHE_KEY, JSON.stringify(nextCache));
         setVerification({
           status: "valid",
           message,
           models
         });
         setDraftSettings((current) => {
-          if (current.apiKey.trim() !== apiKey || models.some((model) => model.id === current.model)) {
+          const currentApiKey = current.apiKey.trim();
+          if ((apiKey && currentApiKey !== apiKey) || (!apiKey && currentApiKey)) {
+            return current;
+          }
+          if (models.some((model) => model.id === current.model)) {
             return current;
           }
           return { ...current, model: models[0].id };
@@ -254,18 +302,22 @@ export function GenerationChat() {
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [draftSettings.apiKey, settingsOpen, verificationCache]);
+  }, [draftSettings.apiKey, runtimeStatus?.hasServerApiKey, settingsOpen, verificationCache]);
 
   const activeSession = sessions.find((session) => session.id === activeSessionId) || sessions[0];
-  const hasConfiguredOpenRouter = settings.apiKey.trim().length > 0;
+  const hasServerApiKey = Boolean(runtimeStatus?.hasServerApiKey);
+  const runtimeIssues = runtimeError ? [runtimeError] : runtimeStatus?.issues || [];
+  const runtimeReady = Boolean(runtimeStatus?.ready);
+  const hasConfiguredOpenRouter = hasServerApiKey || settings.apiKey.trim().length > 0;
   const draftApiKey = draftSettings.apiKey.trim();
+  const draftUsesServerKey = !draftApiKey && hasServerApiKey;
   const modelChoices = verification.models.length ? verification.models : availableModels;
-  const canUseVerifiedModels = draftApiKey.length > 0 && verification.status === "valid" && modelChoices.length > 0;
-  const canSaveSettings = !draftApiKey || verification.status === "valid";
+  const canUseVerifiedModels = (draftApiKey.length > 0 || draftUsesServerKey) && verification.status === "valid" && modelChoices.length > 0;
+  const canSaveSettings = (!draftApiKey && !draftUsesServerKey) || verification.status === "valid";
   const selectedDraftModel = modelChoices.find((model) => model.id === draftSettings.model);
   const composerModelChoices = availableModels.length ? availableModels : fallbackModelOptions;
   const selectedComposerModel = composerModelChoices.find((model) => model.id === settings.model);
-  const canSubmit = useMemo(() => prompt.trim().length > 0 && !isGenerating, [prompt, isGenerating]);
+  const canSubmit = useMemo(() => prompt.trim().length > 0 && !isGenerating && runtimeReady, [prompt, isGenerating, runtimeReady]);
   const canCreateNewSession = !activeSession || activeSession.messages.length > 0 || prompt.trim().length > 0;
 
   function createSession() {
@@ -296,18 +348,18 @@ export function GenerationChat() {
   }
 
   function saveSettings() {
-    const selectedModel = availableModels.some((model) => model.id === draftSettings.model)
+    const selectableModels = availableModels.length ? availableModels : fallbackModelOptions;
+    const selectedModel = selectableModels.some((model) => model.id === draftSettings.model)
       ? draftSettings.model
-      : availableModels[0]?.id || defaultSettings.model;
+      : selectableModels[0]?.id || defaultSettings.model;
     const nextSettings = {
       apiKey: draftSettings.apiKey.trim(),
       model: selectedModel,
       quality: draftSettings.quality
     };
-    if (!nextSettings.apiKey) {
+    if (!nextSettings.apiKey && !hasServerApiKey) {
       setVerification(emptyVerification);
       setVerificationCache(null);
-      localStorage.removeItem(VERIFICATION_CACHE_KEY);
     }
     setSettings(nextSettings);
     setOpenDropdown(null);
@@ -318,6 +370,7 @@ export function GenerationChat() {
     setDraftSettings(settings);
     setOpenDropdown(null);
     setSettingsOpen(true);
+    void loadRuntimeStatus();
   }
 
   function cancelSettings() {
@@ -341,7 +394,7 @@ export function GenerationChat() {
     if (!canSubmit || !activeSession) {
       return;
     }
-    if (!settings.apiKey.trim()) {
+    if (!runtimeReady || !hasConfiguredOpenRouter) {
       openSettings();
       return;
     }
@@ -363,7 +416,7 @@ export function GenerationChat() {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           prompt: userPrompt,
-          apiKey: settings.apiKey,
+          apiKey: settings.apiKey.trim() || undefined,
           model: settings.model,
           quality: settings.quality
         })
@@ -376,8 +429,15 @@ export function GenerationChat() {
         {
           id: crypto.randomUUID(),
           role: "agent",
-          content: "Generated image",
+          content: "Generated with Imagent",
           imageUrl: data.imageUrl,
+          imageFileName: data.imageFileName,
+          provider: data.provider,
+          agentId: data.agentId,
+          capability: data.capability,
+          candidateCount: data.candidateCount,
+          roundCount: data.roundCount,
+          selectedCandidateIndex: data.selectedCandidateIndex,
           model: data.model,
           quality: settings.quality,
           costUsd: data.costUsd,
@@ -389,11 +449,12 @@ export function GenerationChat() {
         {
           id: crypto.randomUUID(),
           role: "agent",
-          content: "Generation failed",
+          content: "Imagent generation failed",
           error: error instanceof Error ? error.message : "Unknown generation error",
           model: settings.model
         }
       ]);
+      void loadRuntimeStatus();
     } finally {
       setIsGenerating(false);
     }
@@ -458,10 +519,32 @@ export function GenerationChat() {
         </button>
 
         <div className="conversation custom-scrollbar">
+          {!runtimeStatus && !runtimeError ? (
+            <section className="runtime-alert info">
+              <div className="runtime-alert-title">
+                <Loader2 className="spin" size={16} />
+                <strong>Checking local Imagent runtime</strong>
+              </div>
+            </section>
+          ) : null}
+          {runtimeIssues.length > 0 ? (
+            <section className="runtime-alert error">
+              <div className="runtime-alert-title">
+                <AlertCircle size={16} />
+                <strong>Generation is unavailable</strong>
+              </div>
+              <p>The local UI runtime is missing required dependencies.</p>
+              <ul>
+                {runtimeIssues.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
           {!activeSession || activeSession.messages.length === 0 ? (
             <section className="generation-empty">
               <span className="empty-kicker">Powered by Gittensor · image agent · benchmark ready</span>
-              <h1>What should Imagent create?</h1>
+              <h1>What should Imagent plan and generate?</h1>
               <div className="gittensor-callout">
                 <RadioTower size={16} />
                 <div>
@@ -475,6 +558,7 @@ export function GenerationChat() {
               </div>
               <div className="generation-showcase" aria-hidden="true">
                 <div className="showcase-image">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className="showcase-brand" src="/brand/imagent-ai-avatar.jpg" alt="" />
                 </div>
               </div>
@@ -491,6 +575,7 @@ export function GenerationChat() {
               {activeSession.messages.map((message) => (
                 <article className={`chat-turn ${message.role}`} key={message.id}>
                   <div className="turn-avatar">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     {message.role === "user" ? <UserRound size={16} strokeWidth={2.4} /> : <img src="/brand/imagent-ai-avatar.jpg" alt="" />}
                   </div>
                   <div className="turn-content">
@@ -499,7 +584,7 @@ export function GenerationChat() {
                       <div className="generated-card">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={message.imageUrl} alt="Generated image" />
-                        <a href={message.imageUrl} download="imagent-output.png">
+                        <a href={message.imageUrl} download={message.imageFileName || "imagent-output.png"}>
                           <Download size={14} />
                           Download
                         </a>
@@ -508,8 +593,16 @@ export function GenerationChat() {
                     {message.error ? <div className="turn-error">{message.error}</div> : null}
                     {message.role === "agent" ? (
                       <div className="turn-meta">
+                        {message.agentId ? <span>{message.agentId}</span> : null}
+                        {message.capability ? <span>{message.capability}</span> : null}
                         <span>{message.model || settings.model}</span>
                         {message.quality ? <span>{message.quality}</span> : null}
+                        {typeof message.candidateCount === "number" && message.candidateCount > 0 ? (
+                          <span>{message.candidateCount} candidates</span>
+                        ) : null}
+                        {typeof message.roundCount === "number" && message.roundCount > 0 ? (
+                          <span>{message.roundCount} rounds</span>
+                        ) : null}
                         {typeof message.latencyMs === "number" ? <span>{message.latencyMs.toFixed(0)} ms</span> : null}
                         {typeof message.costUsd === "number" ? <span>${message.costUsd.toFixed(6)}</span> : null}
                       </div>
@@ -520,6 +613,7 @@ export function GenerationChat() {
               {isGenerating ? (
                 <article className="chat-turn agent">
                   <div className="turn-avatar">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/brand/imagent-ai-avatar.jpg" alt="" />
                   </div>
                   <div className="turn-content pending">
@@ -571,7 +665,7 @@ export function GenerationChat() {
               ) : (
                 <button className="composer-configure-button" type="button" onClick={openSettings}>
                   <KeyRound size={15} />
-                  Configure OpenRouter
+                  Configure Imagent
                 </button>
               )}
               <button className="composer-send-button" type="submit" disabled={!canSubmit} aria-label="Generate image">
@@ -600,13 +694,24 @@ export function GenerationChat() {
                 </span>
                 <div>
                   <h2 id="settings-title">Generation settings</h2>
-                  <p>OpenRouter image generation</p>
+                  <p>OpenRouter-backed Imagent agent</p>
                 </div>
               </div>
               <button type="button" onClick={cancelSettings} aria-label="Close settings">
                 <X size={18} />
               </button>
             </header>
+            <div className={runtimeReady ? "settings-runtime-status ready" : "settings-runtime-status error"}>
+              <strong>Local runtime</strong>
+              <p>{runtimeStatus ? "The UI server can reach the local Imagent runtime." : "Checking the local Imagent runtime."}</p>
+              {runtimeIssues.length > 0 ? (
+                <ul>
+                  {runtimeIssues.map((issue) => (
+                    <li key={issue}>{issue}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
             <label className="settings-field">
               <span>OpenRouter API key</span>
               <div className="api-key-row">
@@ -622,6 +727,11 @@ export function GenerationChat() {
                 </div>
                 <VerificationBadge verification={verification} />
               </div>
+              <small className="field-note">
+                {hasServerApiKey
+                  ? "A shared server OpenRouter key is enabled for this UI. Leave this blank to use it, or enter a browser key to override it."
+                  : "No shared server key is enabled. Enter a browser key here, or enable IMAGENT_UI_ENABLE_SERVER_KEY_FALLBACK on a trusted private deployment."}
+              </small>
             </label>
             <div className="settings-field">
               <span>Image model</span>
@@ -888,8 +998,28 @@ function labelForModel(model: string, models: OpenRouterModelOption[]) {
   return model.length > 30 ? `${model.slice(0, 30)}...` : model;
 }
 
-function isUsableVerificationCache(cache: VerificationCache | null, apiKey: string): cache is VerificationCache {
-  return Boolean(cache && cache.apiKey === apiKey.trim() && Array.isArray(cache.models) && cache.models.length > 0);
+function isUsableVerificationCache(cache: VerificationCache | null, cacheKey: string): cache is VerificationCache {
+  return Boolean(cache && cache.cacheKey === cacheKey && Array.isArray(cache.models) && cache.models.length > 0);
+}
+
+function sanitizeSessions(sessions: ChatSession[]) {
+  return sessions.map((session) => ({
+    ...session,
+    messages: session.messages.map((message) => {
+      if (!message.imageUrl?.startsWith("data:")) {
+        return message;
+      }
+      return {
+        ...message,
+        imageUrl: undefined,
+        imageFileName: undefined
+      };
+    })
+  }));
+}
+
+function isQualityOption(value: unknown): value is string {
+  return typeof value === "string" && qualityOptions.includes(value);
 }
 
 function readJson<T>(key: string, fallback: T): T {
