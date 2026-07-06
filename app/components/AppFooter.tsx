@@ -22,6 +22,7 @@ export function AppFooter() {
       <div className="footer-inner">
         <div className="footer-brand-panel">
           <Link className="footer-brand" href="/generation">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/imagent-ai-avatar.jpg" alt="" />
             <strong>IMAGENT</strong>
           </Link>

@@ -17,6 +17,7 @@ export function AppHeader() {
   return (
     <header className="app-header">
       <Link className="app-brand" href="/generation">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/imagent-ai-avatar.jpg" alt="" />
         <strong>IMAGENT</strong>
       </Link>
