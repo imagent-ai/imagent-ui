@@ -39,7 +39,7 @@ export default async function LeaderboardPage() {
     <div className="leaderboard-page">
       <section className="leaderboard-hero">
         <div className="leaderboard-hero-copy">
-          <span className="page-kicker">Gittensor subnet 74 · image miners · official eval</span>
+          <span className="page-kicker">Powered by Gittensor · subnet 74 · official eval</span>
           <h1>Image miners compete on live benchmark improvement.</h1>
           <p>Every report is ranked by score, PR outcome, baseline delta, latency, cost, and judge dimensions.</p>
         </div>

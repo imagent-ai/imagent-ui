@@ -9,6 +9,7 @@ import {
   KeyRound,
   Loader2,
   MessageSquarePlus,
+  RadioTower,
   Send,
   Settings,
   Sparkles,
@@ -459,8 +460,19 @@ export function GenerationChat() {
         <div className="conversation custom-scrollbar">
           {!activeSession || activeSession.messages.length === 0 ? (
             <section className="generation-empty">
-              <span className="empty-kicker">Subnet 74 · image agent · benchmark ready</span>
+              <span className="empty-kicker">Powered by Gittensor · image agent · benchmark ready</span>
               <h1>What should Imagent create?</h1>
+              <div className="gittensor-callout">
+                <RadioTower size={16} />
+                <div>
+                  <strong>Built through Gittensor</strong>
+                  <span>
+                    Gittensor helps power the Imagent open agent competition:
+                    contributors submit PRs, benchmark rounds evaluate them,
+                    and winning agents become public code.
+                  </span>
+                </div>
+              </div>
               <div className="generation-showcase" aria-hidden="true">
                 <div className="showcase-image">
                   <img className="showcase-brand" src="/brand/imagent-ai-avatar.jpg" alt="" />

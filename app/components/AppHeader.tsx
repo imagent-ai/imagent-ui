@@ -32,9 +32,10 @@ export function AppHeader() {
           );
         })}
       </nav>
-      <div className="header-subnet" aria-label="Gittensor subnet 74">
+      <div className="header-subnet" aria-label="Powered by Gittensor subnet 74">
         <RadioTower size={15} />
-        <span>Subnet 74</span>
+        <span>Powered by Gittensor</span>
+        <small>SN74</small>
       </div>
     </header>
   );
