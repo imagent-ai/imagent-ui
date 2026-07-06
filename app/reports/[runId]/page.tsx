@@ -1,4 +1,4 @@
-import { ExternalLink, GitMerge, GitPullRequestClosed } from "lucide-react";
+import { ExternalLink, GitMerge, GitPullRequestClosed, Minus } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getReport, listReports, toLeaderboardEntry } from "@/lib/reports";
 
@@ -40,12 +40,19 @@ export default async function ReportPage({ params }: PageProps) {
         <section className="report-panel pr-panel">
           <div>
             <h2>Pull Request</h2>
-            <p>#{entry.pullRequest.number} {entry.pullRequest.title}</p>
+            <p>{entry.pullRequest.number === null ? entry.pullRequest.title : `#${entry.pullRequest.number} ${entry.pullRequest.title}`}</p>
           </div>
           <span className={`pr-state ${entry.pullRequest.state}`}>
-            {entry.pullRequest.state === "merged" ? <GitMerge size={15} /> : <GitPullRequestClosed size={15} />}
+            {entry.pullRequest.state === "merged" ? (
+              <GitMerge size={15} />
+            ) : entry.pullRequest.state === "unknown" ? (
+              <Minus size={15} />
+            ) : (
+              <GitPullRequestClosed size={15} />
+            )}
             {entry.pullRequest.state}
           </span>
+          {entry.pullRequest.source === "derived" ? <small>GitHub pull request metadata was not attached to this report.</small> : null}
           {entry.pullRequest.html_url ? (
             <a className="external-link" href={entry.pullRequest.html_url}>
               GitHub <ExternalLink size={14} />
