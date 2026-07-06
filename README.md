@@ -1,6 +1,7 @@
 # imagent-ui
 
-Web console for imported `imagent-bench` reports.
+Web console for imported `imagent-bench` reports plus a local Imagent generation
+playground.
 
 ## Gittensor Relationship
 
@@ -21,14 +22,31 @@ npm install
 npm run dev
 ```
 
+The generation playground also expects:
+
+- `python3` on your PATH, or `IMAGENT_PYTHON_BIN` pointing to a Python binary;
+- a sibling `../imagent` checkout, or `IMAGENT_REPOSITORY_PATH` set to an
+  `imagent` repository path;
+- `IMAGENT_PUBLIC_SITE_URL=https://tryimagent.com` if the deployed public origin
+  differs from the default and you want metadata plus OpenRouter attribution to
+  match it;
+- an OpenRouter API key entered in the browser settings modal, or both
+  `OPENROUTER_API_KEY` and `IMAGENT_UI_ENABLE_SERVER_KEY_FALLBACK=true`
+  configured on the UI server for trusted private shared use.
+
+Generated playground images are stored under `data/agent-runs` and served back
+through the UI as run artifacts. The browser no longer persists base64 image
+payloads or API keys in `localStorage`, and the public runtime status endpoint
+does not expose local filesystem paths.
+
 Import a benchmark report:
 
 ```bash
 npm run import-report -- ../imagent-bench/benchmark-output/benchmark-report.json
 ```
 
-The UI reads JSON reports from `data/reports`. It does not execute official
-benchmark runs; official results are produced by `imagent-bench`.
+The UI reads benchmark reports from `data/reports`. Official benchmark runs are
+still produced by `imagent-bench`.
 
 ## Deployment
 

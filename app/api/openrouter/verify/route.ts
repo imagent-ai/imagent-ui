@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { resolvePlaygroundEnvironment } from "@/lib/playground";
+import { resolvePublicSiteUrl } from "@/lib/site";
 
 type VerifyRequest = {
   apiKey?: string;
@@ -41,8 +43,13 @@ const OPENROUTER_KEY_URL = "https://openrouter.ai/api/v1/key";
 const OPENROUTER_IMAGE_MODELS_URL = "https://openrouter.ai/api/v1/models?output_modalities=image&sort=pricing-low-to-high";
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as VerifyRequest;
-  const apiKey = String(body.apiKey || "").trim();
+  const body = await parseJson<VerifyRequest>(request);
+  const publicSiteUrl = resolvePublicSiteUrl();
+  const requestedApiKey = String(body.apiKey || "").trim();
+  const environment = resolvePlaygroundEnvironment();
+  const sharedServerKey = environment.allowServerKeyFallback ? environment.configuredServerApiKey : "";
+  const apiKey = requestedApiKey || sharedServerKey;
+  const usingServerKey = !requestedApiKey && Boolean(sharedServerKey);
 
   if (!apiKey) {
     return NextResponse.json({ error: "OpenRouter API key is required." }, { status: 400 });
@@ -51,8 +58,8 @@ export async function POST(request: Request) {
   const keyResponse = await fetch(OPENROUTER_KEY_URL, {
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": "https://github.com/imagent-ai/imagent-ui",
-      "X-OpenRouter-Title": "Imagent Bench"
+      "HTTP-Referer": publicSiteUrl,
+      "X-OpenRouter-Title": "Imagent UI"
     },
     cache: "no-store"
   });
@@ -71,8 +78,8 @@ export async function POST(request: Request) {
   const modelsResponse = await fetch(OPENROUTER_IMAGE_MODELS_URL, {
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": "https://github.com/imagent-ai/imagent-ui",
-      "X-OpenRouter-Title": "Imagent Bench"
+      "HTTP-Referer": publicSiteUrl,
+      "X-OpenRouter-Title": "Imagent UI"
     },
     cache: "no-store"
   });
@@ -84,6 +91,7 @@ export async function POST(request: Request) {
         verified: true,
         key: keyPayload.data || null,
         models: [],
+        usingServerKey,
         warning: modelsPayload.error?.message || `OpenRouter model discovery failed with HTTP ${modelsResponse.status}`
       },
       { status: 200 }
@@ -103,11 +111,12 @@ export async function POST(request: Request) {
   return NextResponse.json({
     verified: true,
     key: keyPayload.data || null,
-    models
+    models,
+    usingServerKey
   });
 }
 
-async function parseJson<T>(response: Response): Promise<T> {
+async function parseJson<T>(response: Request | Response): Promise<T> {
   try {
     return (await response.json()) as T;
   } catch {

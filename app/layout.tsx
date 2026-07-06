@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AppFooter } from "@/app/components/AppFooter";
 import { AppHeader } from "@/app/components/AppHeader";
 import { ScrollActivity } from "@/app/components/ScrollActivity";
+import { resolvePublicSiteUrl } from "@/lib/site";
 import "./styles.css";
 
 const jetBrainsMono = JetBrains_Mono({
@@ -12,9 +13,21 @@ const jetBrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains"
 });
 
+const publicSiteUrl = resolvePublicSiteUrl();
+
 export const metadata: Metadata = {
   title: "Imagent",
   description: "Image agent playground and benchmark leaderboard",
+  metadataBase: new URL(publicSiteUrl),
+  alternates: {
+    canonical: "/"
+  },
+  openGraph: {
+    title: "Imagent",
+    description: "Image agent playground and benchmark leaderboard",
+    url: publicSiteUrl,
+    siteName: "Imagent"
+  },
   icons: {
     icon: "/brand/imagent-ai-avatar.jpg",
     apple: "/brand/imagent-ai-avatar.jpg"
