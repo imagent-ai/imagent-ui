@@ -25,7 +25,11 @@ export function AppFooter() {
             <img src="/brand/imagent-ai-avatar.jpg" alt="" />
             <strong>IMAGENT</strong>
           </Link>
-          <p>Image generation benchmark and miner leaderboard built by Gittensor subnet 74.</p>
+          <p>
+            Imagent is built through Gittensor: contributors submit image-agent
+            code, benchmark rounds score it, and winning agents become public
+            reference implementations.
+          </p>
         </div>
 
         <nav className="footer-links" aria-label="Footer navigation">
@@ -35,7 +39,7 @@ export function AppFooter() {
         </nav>
 
         <div className="footer-bottom">
-          <span><RadioTower size={13} /> Gittensor subnet 74</span>
+          <span><RadioTower size={13} /> Powered by Gittensor · subnet 74</span>
           <span>generation · benchmark · merged PR proof</span>
         </div>
       </div>

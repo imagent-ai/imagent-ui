@@ -267,7 +267,7 @@ textarea:focus-visible {
   color: var(--ink);
   display: grid;
   gap: 18px;
-  grid-template-columns: 220px minmax(0, 1fr) 220px;
+  grid-template-columns: 220px minmax(0, 1fr) 290px;
   height: 60px;
   padding: 0 20px;
   position: sticky;
@@ -338,6 +338,25 @@ textarea:focus-visible {
   border: 1px solid rgba(3, 88, 188, 0.14);
   justify-self: end;
   max-width: 100%;
+}
+
+.header-subnet span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-subnet small {
+  background: rgba(3, 88, 188, 0.1);
+  border: 1px solid rgba(3, 88, 188, 0.12);
+  border-radius: 999px;
+  color: var(--accent-dark);
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  text-transform: uppercase;
 }
 
 .app-nav a:hover,
@@ -755,6 +774,49 @@ textarea:focus-visible {
   font-size: 15px;
   line-height: 1.5;
   margin: 12px 0 0;
+}
+
+.gittensor-callout {
+  align-items: flex-start;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(231, 248, 255, 0.9)),
+    radial-gradient(circle at top right, rgba(29, 217, 245, 0.2), transparent 38%);
+  border: 1px solid rgba(3, 88, 188, 0.16);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 11px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  margin-top: 16px;
+  max-width: 720px;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.gittensor-callout svg {
+  background: rgba(3, 88, 188, 0.1);
+  border-radius: 999px;
+  color: var(--accent-dark);
+  height: 28px;
+  padding: 6px;
+  width: 28px;
+}
+
+.gittensor-callout div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.gittensor-callout strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.gittensor-callout span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .prompt-suggestions {
@@ -2823,8 +2885,7 @@ textarea:focus-visible {
     padding: 8px;
   }
 
-  .app-brand,
-  .header-subnet {
+  .app-brand {
     display: none;
   }
 
@@ -2835,7 +2896,23 @@ textarea:focus-visible {
     justify-content: initial;
     min-width: 0;
     overflow: hidden;
+    order: 1;
     width: 100%;
+  }
+
+  .header-subnet {
+    display: inline-flex;
+    font-size: 11px;
+    height: 34px;
+    justify-content: center;
+    justify-self: stretch;
+    order: 2;
+    padding: 0 8px;
+  }
+
+  .header-subnet small {
+    font-size: 9px;
+    padding: 2px 6px;
   }
 
   .app-nav a {
@@ -2921,6 +2998,17 @@ textarea:focus-visible {
     max-width: 100%;
     padding: 7px 10px;
     white-space: normal;
+  }
+
+  .gittensor-callout {
+    grid-template-columns: 1fr;
+    margin-top: 14px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .gittensor-callout svg {
+    justify-self: center;
   }
 
   .prompt-suggestions,
