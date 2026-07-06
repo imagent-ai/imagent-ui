@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "import-report": "node scripts/import-report.mjs"
+    "import-report": "node scripts/import-report.mjs",
+    "deploy:caddy": "bash scripts/deploy-caddy.sh"
   },
   "dependencies": {
     "lucide-react": "^1.23.0",
