@@ -15,9 +15,10 @@ import {
   Settings,
   Sparkles,
   Trash2,
-  UserRound,
   X
 } from "lucide-react";
+import { LandingBackgroundFx } from "@/app/components/EffectCard";
+import { ScrollReveal } from "@/app/components/ScrollReveal";
 import {
   IMAGENT_GENERATION_MODEL_ID,
   IMAGENT_GENERATION_MODEL_OPTION
@@ -314,6 +315,37 @@ export function GenerationChat() {
   const selectedComposerModel = composerModelChoices.find((model) => model.id === settings.model);
   const canSubmit = useMemo(() => prompt.trim().length > 0 && !isGenerating && runtimeReady, [prompt, isGenerating, runtimeReady]);
   const canCreateNewSession = !activeSession || activeSession.messages.length > 0 || prompt.trim().length > 0;
+  const activeMessages = activeSession?.messages || [];
+  const latestAgentMessage = [...activeMessages].reverse().find((message) => message.role === "agent");
+  const latestUserMessage = [...activeMessages].reverse().find((message) => message.role === "user");
+  const recentSessions = sessions.filter((session) => session.messages.length > 0).slice(0, 5);
+  const runtimeState = !runtimeStatus && !runtimeError ? "checking" : runtimeReady ? "ready" : "blocked";
+  const latestMetaItems: string[] = [];
+
+  if (latestAgentMessage?.agentId) {
+    latestMetaItems.push(latestAgentMessage.agentId);
+  }
+  if (latestAgentMessage?.capability) {
+    latestMetaItems.push(latestAgentMessage.capability);
+  }
+  if (latestAgentMessage) {
+    latestMetaItems.push(latestAgentMessage.model || settings.model);
+  }
+  if (latestAgentMessage?.quality) {
+    latestMetaItems.push(latestAgentMessage.quality);
+  }
+  if (typeof latestAgentMessage?.candidateCount === "number" && latestAgentMessage.candidateCount > 0) {
+    latestMetaItems.push(`${latestAgentMessage.candidateCount} candidates`);
+  }
+  if (typeof latestAgentMessage?.roundCount === "number" && latestAgentMessage.roundCount > 0) {
+    latestMetaItems.push(`${latestAgentMessage.roundCount} rounds`);
+  }
+  if (typeof latestAgentMessage?.latencyMs === "number") {
+    latestMetaItems.push(`${latestAgentMessage.latencyMs.toFixed(0)} ms`);
+  }
+  if (typeof latestAgentMessage?.costUsd === "number") {
+    latestMetaItems.push(`$${latestAgentMessage.costUsd.toFixed(6)}`);
+  }
 
   function createSession() {
     if (!canCreateNewSession && activeSession) {
@@ -469,208 +501,266 @@ export function GenerationChat() {
 
   return (
     <div className="generation-shell">
-      <aside className="history-sidebar" aria-label="Chat history">
-        <button className="new-chat" type="button" onClick={createSession} aria-disabled={!canCreateNewSession}>
-          <MessageSquarePlus size={17} />
-          New chat
+      <LandingBackgroundFx />
+      <ScrollReveal />
+      <section className="generation-hero" aria-labelledby="generation-title" data-reveal="fade-up">
+        <div className="generation-hero-copy">
+          <span className="generation-kicker">
+            <Sparkles size={14} />
+            Image Agent Console
+          </span>
+          <h1 id="generation-title" aria-label="Generate With The Current Agent">
+            <span>Generate With</span>
+            <span>The Current</span>
+            <span>Agent</span>
+          </h1>
+          <p>
+            Write one prompt and let Imagent call the fixed OpenRouter image model through the current agent runtime.
+          </p>
+          <div className="generation-status-row" aria-label="Generation status">
+            <span className={`generation-status-pill ${runtimeState}`}>
+              <span className="generation-status-dot" />
+              {runtimeState === "checking" ? "Checking Runtime" : runtimeReady ? "Runtime Ready" : "Runtime Blocked"}
+            </span>
+            <span className={`generation-status-pill ${hasConfiguredOpenRouter ? "ready" : "warning"}`}>
+              <KeyRound size={14} />
+              {hasConfiguredOpenRouter ? "OpenRouter Ready" : "OpenRouter Needed"}
+            </span>
+            <span className="generation-status-pill">
+              <RadioTower size={14} />
+              Gittensor Powered
+            </span>
+          </div>
+        </div>
+        <button className="generation-settings-button" type="button" onClick={openSettings}>
+          <Settings size={17} />
+          Settings
         </button>
-        <div className="history-scroll custom-scrollbar">
-          <div className="history-section-label">Chats</div>
-          <div className="history-list">
-            {sessions.map((session) => (
-              <div
-                className={session.id === activeSessionId ? "history-item active" : "history-item"}
-                key={session.id}
-              >
-                <button className="history-select" type="button" onClick={() => setActiveSessionId(session.id)}>
-                  <span>{session.title}</span>
-                  <small>{session.messages.length} messages</small>
+      </section>
+
+      {!runtimeStatus && !runtimeError ? (
+        <section className="runtime-alert info">
+          <div className="runtime-alert-title">
+            <Loader2 className="spin" size={16} />
+            <strong>Checking Local Imagent Runtime</strong>
+          </div>
+        </section>
+      ) : null}
+      {runtimeIssues.length > 0 ? (
+        <section className="runtime-alert error">
+          <div className="runtime-alert-title">
+            <AlertCircle size={16} />
+            <strong>Generation Is Unavailable</strong>
+          </div>
+          <p>The local UI runtime is missing required dependencies.</p>
+          <ul>
+            {runtimeIssues.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section className="generation-workspace" aria-label="Generation workspace">
+        <div className="generation-panel generation-prompt-panel">
+          <div className="generation-panel-head">
+            <div>
+              <span>Prompt</span>
+              <strong>{activeSession?.title || "New Run"}</strong>
+            </div>
+            <button className="generation-new-run" type="button" onClick={createSession} disabled={!canCreateNewSession}>
+              <MessageSquarePlus size={16} />
+              New Run
+            </button>
+          </div>
+
+          <div className="generation-model-card">
+            <div>
+              <span>
+                <Sparkles size={15} />
+                Model
+              </span>
+              <strong>{selectedComposerModel?.name || labelForModel(settings.model, composerModelChoices)}</strong>
+            </div>
+            <small>Fixed through OpenRouter so agent logic is the variable.</small>
+          </div>
+
+          <div className="generation-composer-wrap">
+            <form className="generation-composer" onSubmit={submit}>
+              <textarea
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                placeholder="Describe the image you want the agent to plan and generate"
+                rows={8}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
+              />
+              <div className="composer-toolbar">
+                <div className="generation-composer-controls">
+                  {hasConfiguredOpenRouter ? (
+                    <>
+                      <ModelDropdown
+                        hideLabel
+                        id="composer-model"
+                        label="Model"
+                        models={composerModelChoices}
+                        open={openDropdown === "composer-model"}
+                        selectedModel={settings.model}
+                        selectedModelName={selectedComposerModel?.name || labelForModel(settings.model, composerModelChoices)}
+                        onOpenChange={(open) => setOpenDropdown(open ? "composer-model" : null)}
+                        onSelect={updateComposerModel}
+                      />
+                      <QualityDropdown
+                        hideLabel
+                        open={openDropdown === "composer-quality"}
+                        selectedQuality={settings.quality}
+                        onOpenChange={(open) => setOpenDropdown(open ? "composer-quality" : null)}
+                        onSelect={updateComposerQuality}
+                      />
+                    </>
+                  ) : (
+                    <button className="composer-configure-button" type="button" onClick={openSettings}>
+                      <KeyRound size={15} />
+                      Configure OpenRouter
+                    </button>
+                  )}
+                </div>
+                <button className="composer-send-button" type="submit" disabled={!canSubmit} aria-label="Generate image">
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="spin" size={16} />
+                      Running
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} />
+                      Generate
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="generation-suggestions">
+            <div className="generation-suggestions-head">
+              <span>Starter Prompts</span>
+              <small>Click to fill</small>
+            </div>
+            <div className="prompt-suggestions">
+              {starterPrompts.map((item) => (
+                <button type="button" key={item} onClick={() => setPrompt(item)}>
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="generation-panel generation-preview-panel">
+          <div className="generation-panel-head">
+            <div>
+              <span>Preview</span>
+              <strong>Latest Agent Output</strong>
+            </div>
+            <span className={isGenerating ? "generation-preview-badge running" : "generation-preview-badge"}>
+              {isGenerating ? "Running" : latestAgentMessage?.imageUrl ? "Ready" : "Waiting"}
+            </span>
+          </div>
+
+          <div className="generation-preview-surface">
+            {isGenerating ? (
+              <div className="generation-preview-state generation-preview-loading">
+                <Loader2 className="spin" size={30} />
+                <strong>Agent Is Generating</strong>
+                <p>Planning the prompt and calling the OpenRouter image model.</p>
+              </div>
+            ) : latestAgentMessage?.imageUrl ? (
+              <div className="generation-preview-result">
+                <div className="generation-preview-image">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={latestAgentMessage.imageUrl} alt="Generated image" />
+                </div>
+                {latestUserMessage ? (
+                  <div className="generation-latest-prompt">
+                    <span>Prompt</span>
+                    <p>{latestUserMessage.content}</p>
+                  </div>
+                ) : null}
+                <div className="generation-preview-actions">
+                  <a href={latestAgentMessage.imageUrl} download={latestAgentMessage.imageFileName || "imagent-output.png"}>
+                    <Download size={15} />
+                    Download Image
+                  </a>
+                  {latestAgentMessage.traceUrl ? (
+                    <a href={latestAgentMessage.traceUrl} target="_blank" rel="noreferrer">
+                      <FileJson size={15} />
+                      View Trace
+                    </a>
+                  ) : null}
+                </div>
+                {latestMetaItems.length > 0 ? (
+                  <div className="generation-preview-meta">
+                    {latestMetaItems.map((item) => (
+                      <span key={item}>{item}</span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : latestAgentMessage?.error ? (
+              <div className="generation-preview-state generation-preview-error">
+                <AlertCircle size={30} />
+                <strong>Generation Failed</strong>
+                <p>{latestAgentMessage.error}</p>
+              </div>
+            ) : (
+              <div className="generation-preview-state generation-preview-empty">
+                <div className="generation-preview-orb">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/brand/imagent-ai-avatar.jpg" alt="" />
+                </div>
+                <strong>Image Preview</strong>
+                <p>Your generated image and trace will appear here after the agent run.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="generation-runs" aria-label="Recent runs">
+        <div className="generation-runs-head">
+          <div>
+            <span>Recent Runs</span>
+            <strong>Saved In This Browser</strong>
+          </div>
+          <small>{recentSessions.length} active</small>
+        </div>
+        {recentSessions.length > 0 ? (
+          <div className="generation-run-list">
+            {recentSessions.map((session) => (
+              <div className={session.id === activeSessionId ? "generation-run-card active" : "generation-run-card"} key={session.id}>
+                <button className="generation-run-select" type="button" onClick={() => setActiveSessionId(session.id)}>
+                  <strong>{session.title}</strong>
+                  <span>{session.messages.length} messages</span>
                 </button>
                 <button
-                  className="history-delete"
+                  className="generation-run-delete"
                   type="button"
                   aria-label={`Delete ${session.title}`}
                   onClick={() => deleteSession(session.id)}
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={15} />
                 </button>
               </div>
             ))}
           </div>
-        </div>
-        <footer className="generation-sidebar-footer">
-          <strong>IMAGENT</strong>
-          <span>built by Gittensor subnet 74</span>
-        </footer>
-      </aside>
-
-      <section className="generation-main">
-        <button className="floating-settings-button" type="button" onClick={openSettings} aria-label="Settings">
-          <Settings size={18} />
-        </button>
-
-        <div className="conversation custom-scrollbar">
-          {!runtimeStatus && !runtimeError ? (
-            <section className="runtime-alert info">
-              <div className="runtime-alert-title">
-                <Loader2 className="spin" size={16} />
-                <strong>Checking local Imagent runtime</strong>
-              </div>
-            </section>
-          ) : null}
-          {runtimeIssues.length > 0 ? (
-            <section className="runtime-alert error">
-              <div className="runtime-alert-title">
-                <AlertCircle size={16} />
-                <strong>Generation is unavailable</strong>
-              </div>
-              <p>The local UI runtime is missing required dependencies.</p>
-              <ul>
-                {runtimeIssues.map((issue) => (
-                  <li key={issue}>{issue}</li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-          {!activeSession || activeSession.messages.length === 0 ? (
-            <section className="generation-empty">
-              <span className="empty-kicker">Powered by Gittensor · image agent · benchmark ready</span>
-              <h1>What should Imagent plan and generate?</h1>
-              <div className="gittensor-callout">
-                <RadioTower size={16} />
-                <div>
-                  <strong>Built through Gittensor</strong>
-                  <span>
-                    Gittensor helps power the Imagent open agent competition:
-                    contributors submit PRs, benchmark rounds evaluate them,
-                    and winning agents become public code.
-                  </span>
-                </div>
-              </div>
-              <div className="generation-showcase" aria-hidden="true">
-                <div className="showcase-image">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="showcase-brand" src="/brand/imagent-ai-avatar.jpg" alt="" />
-                </div>
-              </div>
-              <div className="prompt-suggestions">
-                {starterPrompts.map((item) => (
-                  <button type="button" key={item} onClick={() => setPrompt(item)}>
-                    {item}
-                  </button>
-                ))}
-              </div>
-            </section>
-          ) : (
-            <div className="conversation-stack">
-              {activeSession.messages.map((message) => (
-                <article className={`chat-turn ${message.role}`} key={message.id}>
-                  <div className="turn-avatar">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {message.role === "user" ? <UserRound size={16} strokeWidth={2.4} /> : <img src="/brand/imagent-ai-avatar.jpg" alt="" />}
-                  </div>
-                  <div className="turn-content">
-                    <p>{message.content}</p>
-                    {message.imageUrl ? (
-                      <div className="generated-card">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={message.imageUrl} alt="Generated image" />
-                        <a href={message.imageUrl} download={message.imageFileName || "imagent-output.png"}>
-                          <Download size={14} />
-                          Download
-                        </a>
-                      </div>
-                    ) : null}
-                    {message.error ? <div className="turn-error">{message.error}</div> : null}
-                    {message.role === "agent" ? (
-                      <div className="turn-meta">
-                        {message.agentId ? <span>{message.agentId}</span> : null}
-                        {message.capability ? <span>{message.capability}</span> : null}
-                        <span>{message.model || settings.model}</span>
-                        {message.quality ? <span>{message.quality}</span> : null}
-                        {typeof message.candidateCount === "number" && message.candidateCount > 0 ? (
-                          <span>{message.candidateCount} candidates</span>
-                        ) : null}
-                        {typeof message.roundCount === "number" && message.roundCount > 0 ? (
-                          <span>{message.roundCount} rounds</span>
-                        ) : null}
-                        {typeof message.latencyMs === "number" ? <span>{message.latencyMs.toFixed(0)} ms</span> : null}
-                        {typeof message.costUsd === "number" ? <span>${message.costUsd.toFixed(6)}</span> : null}
-                        {message.traceUrl ? (
-                          <a className="turn-trace-link" href={message.traceUrl} target="_blank" rel="noreferrer">
-                            <FileJson size={12} />
-                            View trace
-                          </a>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
-              {isGenerating ? (
-                <article className="chat-turn agent">
-                  <div className="turn-avatar">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/brand/imagent-ai-avatar.jpg" alt="" />
-                  </div>
-                  <div className="turn-content pending">
-                    <Loader2 className="spin" size={16} />
-                    Generating image
-                  </div>
-                </article>
-              ) : null}
-            </div>
-          )}
-        </div>
-
-        <div className="generation-composer-wrap">
-          <form className="generation-composer" onSubmit={submit}>
-            <textarea
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Message Imagent"
-              rows={1}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                }
-              }}
-            />
-            <div className="composer-toolbar">
-              {hasConfiguredOpenRouter ? (
-                <>
-                  <ModelDropdown
-                    hideLabel
-                    id="composer-model"
-                    label="Model"
-                    models={composerModelChoices}
-                    open={openDropdown === "composer-model"}
-                    selectedModel={settings.model}
-                    selectedModelName={selectedComposerModel?.name || labelForModel(settings.model, composerModelChoices)}
-                    onOpenChange={(open) => setOpenDropdown(open ? "composer-model" : null)}
-                    onSelect={updateComposerModel}
-                  />
-                  <QualityDropdown
-                    hideLabel
-                    open={openDropdown === "composer-quality"}
-                    selectedQuality={settings.quality}
-                    onOpenChange={(open) => setOpenDropdown(open ? "composer-quality" : null)}
-                    onSelect={updateComposerQuality}
-                  />
-                </>
-              ) : (
-                <button className="composer-configure-button" type="button" onClick={openSettings}>
-                  <KeyRound size={15} />
-                  Configure Imagent
-                </button>
-              )}
-              <button className="composer-send-button" type="submit" disabled={!canSubmit} aria-label="Generate image">
-                {isGenerating ? <Loader2 className="spin" size={18} /> : <Send size={18} />}
-              </button>
-            </div>
-          </form>
-        </div>
+        ) : (
+          <p className="generation-runs-empty">No saved runs yet.</p>
+        )}
       </section>
 
       {settingsOpen ? (

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import type { ReactNode } from "react";
 import { AppFooter } from "@/app/components/AppFooter";
 import { AppHeader } from "@/app/components/AppHeader";
@@ -12,6 +12,12 @@ const jetBrainsMono = JetBrains_Mono({
   display: "swap",
   subsets: ["latin"],
   variable: "--font-jetbrains"
+});
+
+const spaceGrotesk = Space_Grotesk({
+  display: "swap",
+  subsets: ["latin"],
+  variable: "--font-space-grotesk"
 });
 
 const publicSiteUrl = resolvePublicSiteUrl();
@@ -38,7 +44,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
-      <body className={jetBrainsMono.variable}>
+      <body className={`${jetBrainsMono.variable} ${spaceGrotesk.variable}`}>
         <SiteBackground />
         <ScrollActivity />
         <AppHeader />
