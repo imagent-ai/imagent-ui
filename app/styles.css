@@ -8099,6 +8099,9 @@ body .generation-preview-orb {
     rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(0, 226, 251, 0.28);
   border-radius: 30px;
+  box-shadow:
+    0 0 0 10px rgba(0, 226, 251, 0.05),
+    0 0 90px -8px rgba(0, 226, 251, 0.4);
   display: flex;
   height: 116px;
   justify-content: center;
@@ -8745,10 +8748,11 @@ body .generation-shell .runtime-alert {
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
     rgba(13, 48, 86, 0.82);
-  border: 1px solid rgba(86, 221, 255, 0.24);
+  border: 1px solid rgba(86, 221, 255, 0.3);
   border-radius: 24px;
   box-shadow:
     0 26px 78px rgba(0, 10, 24, 0.32),
+    0 0 68px -30px rgba(0, 226, 251, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
