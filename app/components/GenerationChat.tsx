@@ -562,7 +562,7 @@ export function GenerationChat() {
       ) : null}
 
       <section className="generation-workspace" aria-label="Generation workspace">
-        <div className="generation-panel generation-prompt-panel">
+        <div className="generation-panel generation-prompt-panel" data-reveal="fade-right">
           <div className="generation-panel-head">
             <div>
               <span>Prompt</span>
@@ -661,7 +661,7 @@ export function GenerationChat() {
           </div>
         </div>
 
-        <div className="generation-panel generation-preview-panel">
+        <div className="generation-panel generation-preview-panel" data-reveal="fade-left" data-reveal-delay="1">
           <div className="generation-panel-head">
             <div>
               <span>Preview</span>
@@ -731,7 +731,7 @@ export function GenerationChat() {
         </div>
       </section>
 
-      <section className="generation-runs" aria-label="Recent runs">
+      <section className="generation-runs" aria-label="Recent runs" data-reveal="fade-up" data-reveal-delay="2">
         <div className="generation-runs-head">
           <div>
             <span>Recent Runs</span>
